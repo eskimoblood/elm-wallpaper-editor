@@ -13,21 +13,12 @@ import StartApp.Simple exposing (start)
 
 import Editor.PatternStage exposing (stage)
 import String
+import Editor.Action exposing(..)
+import Editor.Model exposing (Model)
 
 type alias Point = {x:Float, y:Float}
 type alias Line = List Point
 type alias Tile = List Line
-
-type alias Model = {
-  columns: Int,
-  rows: Int,
-  group: Group,
-  tile: Tile
-}
-
-type Action
-  = Columns Int
-  | Rows Int
 
 
 contentToValue : String -> Int
@@ -39,14 +30,16 @@ contentToValue str =
         Ok v -> v
         Err e -> 0
 
-update : Action -> Model -> Model
-update action model =
-  case action of
-    Rows value ->
-      {model | rows = value}
+contentToValue2 : String -> Float
+contentToValue2 str =
+    let
+      result = String.toFloat str
+    in
+      case result of
+        Ok v -> v
+        Err e -> 0
 
-    Columns value ->
-      {model | columns = value}
+
 
 view : Signal.Address Action -> Model -> Html
 view address model =
@@ -57,13 +50,33 @@ view address model =
       Attr.max "10",
       Attr.min "1"
       ][],
+     input [
+      on "input" targetValue (\str -> Signal.message address (Rows(contentToValue str))),
+      type' "range",
+      Attr.max "10",
+      Attr.min "1"
+      ][],
+     input [
+      on "input" targetValue (\str -> Signal.message address (Width(contentToValue2 str))),
+      type' "range",
+      Attr.max "50",
+      Attr.min "10"
+      ][],
+     input [
+      on "input" targetValue (\str -> Signal.message address (Height(contentToValue2 str))),
+      type' "range",
+      Attr.max "50",
+      Attr.min "10"
+      ][],
 
-      stage (P4 10 10) model.columns model.rows model.tile
+      stage (P4 model.width model.height) model.columns model.rows model.tile
     ]
 
 m = {
   columns= 10,
   rows= 10,
+  width= 20,
+  height =20,
   tile= [
     [{x=0, y=0}, {x=20, y=10}],
     [{x=30, y=30}, {x=20, y=10}],

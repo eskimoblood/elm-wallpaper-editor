@@ -54,7 +54,7 @@ view address model =
       slider {min= "10", max= "100", address= address, createAction= \str -> Width(contentToValue2 str)},
       slider {min= "10", max= "100", address= address, createAction= \str -> Height(contentToValue2 str)},
       groupSelect address,
-      stage (P4 model.width model.height) model.columns model.rows model.tile
+      stage model.group model.columns model.rows model.tile
     ]
 
 m = {

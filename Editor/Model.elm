@@ -12,5 +12,6 @@ type alias Model = {
   width: Float,
   height: Float,
   group: Group,
+  groupType: String,
   tile: Tile
 }

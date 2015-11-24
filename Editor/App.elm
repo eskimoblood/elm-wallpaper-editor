@@ -16,6 +16,10 @@ import String
 import Editor.Action exposing(..)
 import Editor.Model exposing (Model)
 
+import Editor.Ui.Slider exposing (slider)
+import Editor.Ui.GroupSelect exposing (groupSelect)
+
+
 type alias Point = {x:Float, y:Float}
 type alias Line = List Point
 type alias Tile = List Line
@@ -44,31 +48,12 @@ contentToValue2 str =
 view : Signal.Address Action -> Model -> Html
 view address model =
   div []
-    [input [
-      on "input" targetValue (\str -> Signal.message address (Columns(contentToValue str))),
-      type' "range",
-      Attr.max "10",
-      Attr.min "1"
-      ][],
-     input [
-      on "input" targetValue (\str -> Signal.message address (Rows(contentToValue str))),
-      type' "range",
-      Attr.max "10",
-      Attr.min "1"
-      ][],
-     input [
-      on "input" targetValue (\str -> Signal.message address (Width(contentToValue2 str))),
-      type' "range",
-      Attr.max "50",
-      Attr.min "10"
-      ][],
-     input [
-      on "input" targetValue (\str -> Signal.message address (Height(contentToValue2 str))),
-      type' "range",
-      Attr.max "50",
-      Attr.min "10"
-      ][],
-
+    [
+      slider {min= "1", max= "10", address= address, createAction= \str -> Columns(contentToValue str)},
+      slider {min= "1", max= "10", address= address, createAction= \str -> Rows(contentToValue str)},
+      slider {min= "10", max= "100", address= address, createAction= \str -> Width(contentToValue2 str)},
+      slider {min= "10", max= "100", address= address, createAction= \str -> Height(contentToValue2 str)},
+      groupSelect address,
       stage (P4 model.width model.height) model.columns model.rows model.tile
     ]
 
@@ -77,6 +62,7 @@ m = {
   rows= 10,
   width= 20,
   height =20,
+  groupType= "P1",
   tile= [
     [{x=0, y=0}, {x=20, y=10}],
     [{x=30, y=30}, {x=20, y=10}],

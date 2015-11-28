@@ -2,6 +2,7 @@ module Editor.Action where
 
 import Editor.Model exposing (Model)
 import WallpaperGroup.Group exposing(..)
+import WallpaperGroup.Pattern as Pattern
 
 type Action
   = Columns Int
@@ -9,6 +10,7 @@ type Action
   | Width Float
   | Height Float
   | Group String
+  | RasterSize Float
 
 getGroup : String -> Float -> Float -> Group
 getGroup groupType height width =
@@ -46,7 +48,7 @@ getGroup groupType height width =
     P4mg width height
 
   else if groupType == "P3" then
-    P3 width 
+    P3 width
 
   else if groupType == "P3m1" then
     P3m1 width
@@ -85,5 +87,11 @@ update action model =
     Group value ->
       {model |
         group = getGroup value model.height model.width,
-        groupType = value
+        groupType = value,
+        boundingBox = Pattern.bounding (getGroup value 100 100)
+      }
+
+    RasterSize value ->
+      {model |
+        rasterSize = value
       }

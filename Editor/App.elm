@@ -1,6 +1,7 @@
 module Editor.App where
 
 import WallpaperGroup.Group exposing (..)
+import WallpaperGroup.Pattern as Pattern
 
 import Graphics.Element exposing (show)
 import Svg exposing (..)
@@ -18,11 +19,10 @@ import Editor.Model exposing (Model)
 
 import Editor.Ui.Slider exposing (slider)
 import Editor.Ui.GroupSelect exposing (groupSelect)
+import Editor.Ui.Raster exposing (raster)
 
+import Editor.Types exposing (..)
 
-type alias Point = {x:Float, y:Float}
-type alias Line = List Point
-type alias Tile = List Line
 
 
 contentToValue : String -> Int
@@ -54,21 +54,24 @@ view address model =
       slider {min= "10", max= "100", address= address, createAction= \str -> Width(contentToValue2 str)},
       slider {min= "10", max= "100", address= address, createAction= \str -> Height(contentToValue2 str)},
       groupSelect address,
+      raster model.boundingBox model.rasterSize ,
       stage model.group model.columns model.rows model.tile
     ]
 
 m = {
-  columns= 10,
-  rows= 10,
-  width= 20,
-  height =20,
-  groupType= "P1",
-  tile= [
-    [{x=0, y=0}, {x=20, y=10}],
-    [{x=30, y=30}, {x=20, y=10}],
-    [{x=0, y=0}, {x=10, y=20}]
-    ],
-    group= P1 40 40
+      columns= 10,
+      rows= 10,
+      width= 20,
+      height =20,
+      groupType= "P1",
+      rasterSize= 10,
+      boundingBox = Pattern.bounding (P1 100 100),
+      tile= [
+        [{x=0, y=0}, {x=20, y=10}],
+        [{x=30, y=30}, {x=20, y=10}],
+        [{x=0, y=0}, {x=10, y=20}]
+        ],
+      group= P1 40 40
     }
 
 main =

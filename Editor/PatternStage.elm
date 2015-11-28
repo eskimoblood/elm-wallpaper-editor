@@ -5,10 +5,7 @@ import Svg.Attributes exposing (..)
 import WallpaperGroup.Pattern exposing (pattern)
 import WallpaperGroup.Group exposing (..)
 
-
-type alias Point = {x:Float, y:Float}
-type alias Line = List Point
-type alias Tile = List Line
+import Editor.Types exposing (Point, MultiLine, Tile)
 
 lineToAttribute : Point -> List Svg.Attribute -> List Svg.Attribute
 lineToAttribute {x, y} attributes =
@@ -18,7 +15,7 @@ lineToAttribute {x, y} attributes =
     List.append [x2 (toString x), y2 (toString y)] attributes
 
 
-renderLine : Line -> Svg
+renderLine : MultiLine -> Svg
 renderLine line =
    Svg.line (List.foldl lineToAttribute [stroke "black"] line) []
 

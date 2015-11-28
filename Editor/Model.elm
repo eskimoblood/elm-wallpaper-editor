@@ -1,10 +1,8 @@
 module Editor.Model where
 
 import  WallpaperGroup.Group exposing (..)
-
-type alias Point = {x:Float, y:Float}
-type alias Line = List Point
-type alias Tile = List Line
+import  WallpaperGroup.Geom.BoundingBox exposing (..)
+import Editor.Types exposing (..)
 
 type alias Model = {
   columns: Int,
@@ -13,5 +11,7 @@ type alias Model = {
   height: Float,
   group: Group,
   groupType: String,
+  boundingBox: BoundingBox,
+  rasterSize: Float,
   tile: Tile
 }

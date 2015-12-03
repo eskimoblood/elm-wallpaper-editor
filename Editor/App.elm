@@ -54,11 +54,14 @@ view address model =
       slider {min= "10", max= "100", address= address, createAction= \str -> Width(contentToValue2 str)},
       slider {min= "10", max= "100", address= address, createAction= \str -> Height(contentToValue2 str)},
       groupSelect address,
-      raster model.boundingBox model.rasterSize ,
+      raster model.boundingBox model.rasterSize address,
       stage model.group model.columns model.rows model.tile
     ]
 
 m = {
+      lineStart={x=0, y=0},
+      lineEnd={x=0, y=0},
+      isDrawing=False,
       columns= 10,
       rows= 10,
       width= 20,

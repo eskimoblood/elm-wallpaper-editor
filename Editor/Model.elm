@@ -13,5 +13,8 @@ type alias Model = {
   groupType: String,
   boundingBox: BoundingBox,
   rasterSize: Float,
-  tile: Tile
+  tile: Tile,
+  lineStart: Point,
+  lineEnd: Point,
+  isDrawing: Bool
 }

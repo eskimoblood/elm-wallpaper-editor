@@ -11,6 +11,9 @@ type Action
   | Height Float
   | Group String
   | RasterSize Float
+  | LineStart (Float, Float)
+  | LineMove (Float, Float)
+  | LineEnd (Float, Float)
 
 getGroup : String -> Float -> Float -> Group
 getGroup groupType height width =
@@ -94,4 +97,21 @@ update action model =
     RasterSize value ->
       {model |
         rasterSize = value
+      }
+
+    LineStart mousePosition ->
+      {model |
+        lineStart = {x= fst mousePosition, y= snd mousePosition},
+        isDrawing = True
+      }
+
+    LineMove mousePosition ->
+      {model |
+        lineEnd = {x= fst mousePosition, y= snd mousePosition}
+      }
+
+    LineEnd mousePosition ->
+      {model |
+        tile = [model.lineStart, model.lineEnd] :: model.tile,
+        isDrawing = False
       }

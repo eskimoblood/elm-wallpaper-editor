@@ -23,6 +23,7 @@ toLines lines steps=
 calcStep : Point -> Point -> Float -> Point
 calcStep start step i = {x= start.x + step.x * i, y= start.y + step.y * i}
 
+
 splitLine : Float -> Line -> List Point
 splitLine steps {start, end} =
   if steps == 0 then
@@ -31,17 +32,17 @@ splitLine steps {start, end} =
     let
       step = {x= (end.x - start.x) / (steps), y= (end.y - start.y) / (steps)}
     in
-      List.map (calcStep start step)  [0..steps + 1]
+      List.map (calcStep start step)  [0..steps]
 
 
-rectRaster : Point -> Point -> Point -> Point ->  Float -> List Point
+rectRaster : Point -> Point -> Point -> Point -> Float -> List Point
 rectRaster  p1 p2 p3 p4  steps =
   toLines (line p1 p2, line p4 p3) steps
     |> List.map (splitLine steps)
     |> List.concat
 
 
-triangleRaster : Point -> Point -> Point ->  Float -> List Point
+triangleRaster : Point -> Point -> Point -> Float -> List Point
 triangleRaster  p1 p2 p3  steps =
   toLines (line p1 p2, line p1 p3) steps
     |> List.map2 splitLine [0..steps]

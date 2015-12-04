@@ -1,8 +1,13 @@
 module Editor.Action where
 
 import Editor.Model exposing (Model)
+import Editor.Types exposing (..)
+import Editor.Util.Geom exposing (..)
+import Editor.Util.Raster exposing (rasterCoords)
 import WallpaperGroup.Group exposing(..)
 import WallpaperGroup.Pattern as Pattern
+
+
 
 type Action
   = Columns Int
@@ -11,9 +16,10 @@ type Action
   | Height Float
   | Group String
   | RasterSize Float
-  | LineStart (Float, Float)
-  | LineMove (Float, Float)
-  | LineEnd (Float, Float)
+  | LineStart Point
+  | LineMove Point
+  | LineEnd Point
+  | ClearTiles
 
 getGroup : String -> Float -> Float -> Group
 getGroup groupType height width =
@@ -65,6 +71,10 @@ getGroup groupType height width =
   else
     P1 width height
 
+scalePoint : Model -> Point -> Point
+scalePoint model p=
+  {x= p.x / 100 * model.width, y= p.y / 100 * model.height}
+
 
 update : Action -> Model -> Model
 update action model =
@@ -88,30 +98,44 @@ update action model =
       }
 
     Group value ->
-      {model |
-        group = getGroup value model.height model.width,
-        groupType = value,
-        boundingBox = Pattern.bounding (getGroup value 100 100)
-      }
+      let
+        boundingBox  = Pattern.bounding (getGroup value 100 100)
+      in
+        {model |
+          group = getGroup value model.height model.width,
+          groupType = value,
+          boundingBox = Pattern.bounding (getGroup value model.height model.width),
+          rasterCoords = rasterCoords model.rasterSize (Pattern.bounding (getGroup value 100 100))
+        }
 
     RasterSize value ->
       {model |
-        rasterSize = value
+        rasterSize = value,
+        rasterCoords = rasterCoords value model.boundingBox
       }
 
     LineStart mousePosition ->
       {model |
-        lineStart = {x= fst mousePosition, y= snd mousePosition},
+        lineStart = snap model.rasterCoords mousePosition,
+        lineEnd = snap model.rasterCoords mousePosition,
         isDrawing = True
       }
 
     LineMove mousePosition ->
-      {model |
-        lineEnd = {x= fst mousePosition, y= snd mousePosition}
-      }
+      if model.isDrawing then
+        {model |
+          lineEnd = snap model.rasterCoords mousePosition
+        }
+      else
+        model
 
     LineEnd mousePosition ->
       {model |
-        tile = [model.lineStart, model.lineEnd] :: model.tile,
+        tile = [scalePoint model model.lineStart, scalePoint model model.lineEnd] :: model.tile,
         isDrawing = False
+      }
+
+    ClearTiles ->
+      {model |
+        tile = []
       }

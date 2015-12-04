@@ -12,6 +12,7 @@ type alias Model = {
   group: Group,
   groupType: String,
   boundingBox: BoundingBox,
+  rasterCoords: List Point,
   rasterSize: Float,
   tile: Tile,
   lineStart: Point,

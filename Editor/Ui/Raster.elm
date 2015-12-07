@@ -12,6 +12,7 @@ import Editor.Types exposing (..)
 import Editor.Action exposing (..)
 import Editor.Model exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
+import Editor.Util.Svg exposing (renderTile)
 
 import WallpaperGroup.Geom.BoundingBox exposing (..)
 
@@ -62,15 +63,14 @@ raster model address=
       on "mousedown" mousePosition (sendAction LineStart),
       on "mousemove" mousePosition (sendAction LineMove),
       on "mouseup" mousePosition (sendAction LineEnd),
-      Attr.style [
-        ("margin", "10px")
-      ]
+      Attr.class "drawingArea"
     ][
       Svg.svg [
           version "1.1", x "0", y "0"
         ]
         [
           g [](List.map renderPoint model.rasterCoords),
-          preview model
+          preview model,
+          Svg.g [stroke "red"] (renderTile model.tile)
         ]
       ]

@@ -6,20 +6,21 @@ import Editor.Util.Geom exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
 import WallpaperGroup.Group exposing(..)
 import WallpaperGroup.Pattern as Pattern
-
-
+import Random
+import Array
+import Date
+import Debug exposing (log)
 
 type Action
   = Columns Int
   | Rows Int
-  | Width Float
-  | Height Float
   | Group String
   | RasterSize Float
   | LineStart Point
   | LineMove Point
   | LineEnd Point
   | ClearTiles
+  | Random
 
 getGroup : String -> Float -> Float -> Group
 getGroup groupType height width =
@@ -71,9 +72,38 @@ getGroup groupType height width =
   else
     P1 width height
 
-scalePoint : Model -> Point -> Point
-scalePoint model p=
-  {x= p.x / 100 * model.width, y= p.y / 100 * model.height}
+getRandom : Int -> Int -> Int -> Int
+getRandom seed min max =
+  let
+    initialSeed = Random.initialSeed seed
+    generator = Random.int min max
+  in
+    fst (Random.generate generator initialSeed)
+
+getRandomCoord : Model -> Int -> MultiLine
+getRandomCoord model i =
+  let
+    seed = getRandom (model.seed + i) Random.minInt Random.maxInt
+    points = model.rasterCoords
+    i1 = getRandom (seed + i) 0 (List.length points - 1)
+    seed' = getRandom seed Random.minInt Random.maxInt
+    i2 = getRandom (seed') 0 (List.length points - 1)
+    getValue item =
+    case item of
+      Just i
+        -> i
+      Nothing
+        -> {x=0, y=0}
+  in
+    [points
+    |> Array.fromList
+    |> Array.get i1
+    |> getValue,
+    points
+    |> Array.fromList
+    |> Array.get i2
+    |> getValue
+    ]
 
 
 update : Action -> Model -> Model
@@ -84,18 +114,6 @@ update action model =
 
     Columns value ->
       {model | columns = value}
-
-    Width value ->
-      {model |
-        width = value,
-        group = getGroup model.groupType model.height value
-      }
-
-    Height value ->
-      {model |
-        height = value,
-        group = getGroup model.groupType value model.width
-      }
 
     Group value ->
       let
@@ -111,7 +129,8 @@ update action model =
     RasterSize value ->
       {model |
         rasterSize = value,
-        rasterCoords = rasterCoords value model.boundingBox
+        rasterCoords = rasterCoords value (Pattern.bounding (getGroup model.groupType 100 100)),
+        tile = []
       }
 
     LineStart mousePosition ->
@@ -131,7 +150,7 @@ update action model =
 
     LineEnd mousePosition ->
       {model |
-        tile = [scalePoint model model.lineStart, scalePoint model model.lineEnd] :: model.tile,
+        tile = [model.lineStart, model.lineEnd] :: model.tile,
         isDrawing = False
       }
 
@@ -139,3 +158,13 @@ update action model =
       {model |
         tile = []
       }
+
+    Random ->
+      let
+        i = getRandom model.seed 3 10
+        l = List.map (getRandomCoord model) [1..i]
+      in
+        {model |
+          tile = l,
+          seed = getRandom model.seed Random.minInt Random.maxInt
+        }

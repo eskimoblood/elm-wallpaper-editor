@@ -1,15 +1,15 @@
 module Editor.Util.Geom where
 
 import Editor.Types exposing (..)
-
+import Random as Random
 
 distance : Point -> Point -> Float
 distance p1 p2 =
-  sqrt (p1.x - p2.x) ^ 2  + (p1.y - p2.y) ^ 2
+  sqrt (((p1.x - p2.x) ^ 2) + ((p1.y - p2.y) ^ 2))
 
 
-find : Point -> Point -> {p: Point, d: Float} -> {p: Point, d: Float}
-find p1 p2 r=
+findShortest : Point -> Point -> {p: Point, d: Float} -> {p: Point, d: Float}
+findShortest p1 p2 r =
   let
     dist = distance p1 p2
   in
@@ -20,4 +20,4 @@ find p1 p2 r=
 
 snap : List Point -> Point -> Point
 snap points p =
-  .p (List.foldl (find p) {d= 10000000, p= p} points)
+  .p (List.foldl (findShortest p) {d= Random.maxInt |> toFloat, p= p} points)

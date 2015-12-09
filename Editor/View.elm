@@ -17,23 +17,54 @@ import Editor.Types exposing (..)
 
 view : Signal.Address Action -> Model -> Html
 view address model =
-  div [Attr.class "row", Attr.id "String"]
-    [
-      div [Attr.class "sidebar"][
-        slider {min= "1", max= "10", address= address, createAction= \str -> RasterSize(Convert.toFloat str)},
-        slider {min= "1", max= "10", address= address, createAction= \str -> Columns(Convert.toInt str)},
-        slider {min= "1", max= "10", address= address, createAction= \str -> Rows(Convert.toInt str)},
-        groupSelect address,
-        raster model address,
-        button [
-          on "click" targetValue (\_ -> Signal.message address ClearTiles)
-        ][Html.text "Clear"],
-        button [
-          on "click" targetValue (\_ -> Signal.message address Random)
-        ][Html.text "Random"]
-      ],
-      div[ Attr.class "main lalasd"][
-        stage model
+  let
+    patternState = model.patternState
+    drawingState = model.drawingState
+  in
+    div
+      [Attr.class "row", Attr.id "String"
       ]
-
-    ]
+      [ div
+          [Attr.class "sidebar"
+          ]
+          [ slider { value = (toString patternState.rasterSize)
+                   , min= "1"
+                   , max= "20"
+                   , address= address, createAction= \str -> RasterSize(Convert.toFloat str)
+                   }
+          , slider { value=( toString patternState.columns)
+                   , min= "1"
+                   , max= "20"
+                   , address= address
+                   , createAction= \str -> Columns(Convert.toInt str)
+                   }
+          , slider { value = (toString patternState.rows)
+                   , min= "1"
+                   , max= "20"
+                   , address= address
+                   , createAction= \str -> Rows(Convert.toInt str)
+                   }
+          , groupSelect patternState.groupType address
+          , raster drawingState patternState.tile address
+          , button
+              [ on "click" targetValue (\_ -> Signal.message address ClearTiles)
+              ]
+              [ Html.text "Clear"
+              ]
+          , button
+              [ on "click" targetValue (\_ -> Signal.message address Random)
+              ]
+              [Html.text "Random"
+              ]
+          , button
+              [ on "click" targetValue (\_ -> Signal.message address Undo)
+              ]
+              [Html.text "Undo"
+              ]
+          ]
+      , div
+          [ Attr.class "main lalasd"
+          ]
+          [stage patternState
+          ]
+      ]

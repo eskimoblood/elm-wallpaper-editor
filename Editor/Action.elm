@@ -1,6 +1,6 @@
 module Editor.Action where
 
-import Editor.Model exposing (Model)
+import Editor.Model exposing (..)
 import Editor.Types exposing (..)
 import Editor.Util.Geom exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
@@ -21,6 +21,8 @@ type Action
   | LineEnd Point
   | ClearTiles
   | Random
+  | Undo
+  | Redo
 
 getGroup : String -> Float -> Float -> Group
 getGroup groupType height width =
@@ -80,11 +82,10 @@ getRandom seed min max =
   in
     fst (Random.generate generator initialSeed)
 
-getRandomCoord : Model -> Int -> MultiLine
-getRandomCoord model i =
+getRandomCoord : List Point -> Int-> Int -> MultiLine
+getRandomCoord points seed i =
   let
-    seed = getRandom (model.seed + i) Random.minInt Random.maxInt
-    points = model.rasterCoords
+    seed = getRandom (seed + i) Random.minInt Random.maxInt
     i1 = getRandom (seed + i) 0 (List.length points - 1)
     seed' = getRandom seed Random.minInt Random.maxInt
     i2 = getRandom (seed') 0 (List.length points - 1)
@@ -95,76 +96,138 @@ getRandomCoord model i =
       Nothing
         -> {x=0, y=0}
   in
-    [points
-    |> Array.fromList
-    |> Array.get i1
-    |> getValue,
-    points
-    |> Array.fromList
-    |> Array.get i2
-    |> getValue
+    [ points
+      |> Array.fromList
+      |> Array.get i1
+      |> getValue
+    , points
+      |> Array.fromList
+      |> Array.get i2
+      |> getValue
     ]
+
+addHistory : Model -> Model
+addHistory model =
+  let
+    actualState = model.patternState
+    history = model.history
+  in
+     {model | history = actualState :: history}
+
+
+undo : Model -> Model
+undo model =
+  let
+    lastState = List.head model.history
+    newHistory = List.tail model.history |> (Maybe.withDefault [])
+  in
+    case lastState of
+
+      Just state ->
+        {model | history = newHistory, patternState = state}
+
+      Nothing ->
+        model
 
 
 update : Action -> Model -> Model
 update action model =
-  case action of
-    Rows value ->
-      {model | rows = value}
+  let
+      patternState = model.patternState
+      drawingState = model.drawingState
+  in
+    case action of
+      Rows value ->
+        let
+          model = addHistory model
+        in
+          {model | patternState = {patternState | rows = value}}
 
-    Columns value ->
-      {model | columns = value}
+      Columns value ->
+        let
+          model = addHistory model
+        in
+          {model | patternState = {patternState | columns = value}}
 
-    Group value ->
-      let
-        boundingBox  = Pattern.bounding (getGroup value 100 100)
-      in
-        {model |
-          group = getGroup value model.height model.width,
-          groupType = value,
-          boundingBox = Pattern.bounding (getGroup value model.height model.width),
-          rasterCoords = rasterCoords model.rasterSize (Pattern.bounding (getGroup value 100 100))
-        }
+      Group value ->
+        let
+          model = addHistory model
+          boundingBox  = Pattern.bounding (getGroup value 100 100)
+        in
+          { model |
+            patternState =
+              { patternState |
+                group = getGroup value patternState.height patternState.width
+              , groupType = value
+              , boundingBox = Pattern.bounding (getGroup value patternState.height patternState.width)
+              },
+            drawingState =
+              {drawingState |
+                  rasterCoords = rasterCoords patternState.rasterSize (Pattern.bounding (getGroup value 100 100))
+              }
+          }
 
-    RasterSize value ->
-      {model |
-        rasterSize = value,
-        rasterCoords = rasterCoords value (Pattern.bounding (getGroup model.groupType 100 100)),
-        tile = []
-      }
+      RasterSize value ->
+        let
+          model = addHistory model
+        in
+          {model | patternState =
+            { patternState |
+              rasterSize = value
+              ,tile = []
+            },
+            drawingState = {
+               drawingState |
+                 rasterCoords = rasterCoords value (Pattern.bounding (getGroup patternState.groupType 100 100))
+             }
+           }
 
-    LineStart mousePosition ->
-      {model |
-        lineStart = snap model.rasterCoords mousePosition,
-        lineEnd = snap model.rasterCoords mousePosition,
-        isDrawing = True
-      }
+      LineStart mousePosition ->
+        {model | drawingState =
+          {drawingState |
+            lineStart = snap drawingState.rasterCoords mousePosition,
+            lineEnd = snap drawingState.rasterCoords mousePosition,
+            isDrawing = True
+        }}
 
-    LineMove mousePosition ->
-      if model.isDrawing then
-        {model |
-          lineEnd = snap model.rasterCoords mousePosition
-        }
-      else
+      LineMove mousePosition ->
+        if drawingState.isDrawing then
+          { model |
+            drawingState = { drawingState |
+              lineEnd = snap drawingState.rasterCoords mousePosition }
+          }
+        else
+          model
+
+      LineEnd mousePosition ->
+        let
+          model = addHistory model
+        in
+          { model |
+            drawingState = { drawingState | isDrawing = False },
+            patternState = { patternState | tile = [drawingState.lineStart, drawingState.lineEnd] :: patternState.tile}
+          }
+
+      ClearTiles ->
+        let
+          model = addHistory model
+        in
+          { model |
+            patternState = {patternState | tile = [] }
+          }
+
+      Random ->
+        let
+          model = addHistory model
+          i = getRandom model.seed 3 10
+          l = List.map (getRandomCoord drawingState.rasterCoords model.seed) [1..i]
+        in
+          {model |
+            patternState = {patternState | tile = l},
+            seed = getRandom model.seed Random.minInt Random.maxInt
+          }
+      Undo ->
+        undo model
+
+      Redo ->
         model
-
-    LineEnd mousePosition ->
-      {model |
-        tile = [model.lineStart, model.lineEnd] :: model.tile,
-        isDrawing = False
-      }
-
-    ClearTiles ->
-      {model |
-        tile = []
-      }
-
-    Random ->
-      let
-        i = getRandom model.seed 3 10
-        l = List.map (getRandomCoord model) [1..i]
-      in
-        {model |
-          tile = l,
-          seed = getRandom model.seed Random.minInt Random.maxInt
-        }

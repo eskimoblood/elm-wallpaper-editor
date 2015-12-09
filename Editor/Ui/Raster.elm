@@ -18,7 +18,11 @@ import WallpaperGroup.Geom.BoundingBox exposing (..)
 
 renderPoint : Point -> Svg
 renderPoint p =
-  Svg.circle [cx (toString p.x), cy (toString p.y), r "1"][]
+  Svg.circle
+    [ cx (toString p.x)
+    , cy (toString p.y), r "1"
+    ]
+    []
 
 
 mousePosition : Decoder Point
@@ -33,19 +37,19 @@ sendTo address action point =
   Signal.message address (action point)
 
 
-preview : Model -> Svg.Svg
+preview : DrawingState -> Svg.Svg
 preview model =
   let
     childs =
       if model.isDrawing then
-          [
-            Svg.line [
-              x1 (toString model.lineStart.x),
-              y1 (toString model.lineStart.y),
-              x2 (toString model.lineEnd.x),
-              y2 (toString model.lineEnd.y),
-              stroke "grey"
-            ][]
+          [ Svg.line
+            [ x1 (toString model.lineStart.x)
+            , y1 (toString model.lineStart.y)
+            , x2 (toString model.lineEnd.x)
+            , y2 (toString model.lineEnd.y)
+            , stroke "grey"
+            ]
+            []
           ]
       else
        []
@@ -53,24 +57,22 @@ preview model =
     g [] childs
 
 
-raster : Model -> Signal.Address Action -> Html
-raster model address=
+raster : DrawingState -> Tile -> Signal.Address Action -> Html
+raster model tile address=
   let
     sendAction = sendTo address
   in
     div
-    [
-      on "mousedown" mousePosition (sendAction LineStart),
-      on "mousemove" mousePosition (sendAction LineMove),
-      on "mouseup" mousePosition (sendAction LineEnd),
-      Attr.class "drawingArea"
-    ][
-      Svg.svg [
-          version "1.1", x "0", y "0"
+    [ on "mousedown" mousePosition (sendAction LineStart)
+    , on "mousemove" mousePosition (sendAction LineMove)
+    , on "mouseup" mousePosition (sendAction LineEnd)
+    , Attr.class "drawingArea"
+    ]
+    [ Svg.svg
+        [ version "1.1", x "0", y "0"
         ]
-        [
-          g [](List.map renderPoint model.rasterCoords),
-          preview model,
-          Svg.g [stroke "red"] (renderTile model.tile)
+        [ g [](List.map renderPoint model.rasterCoords)
+        , preview model
+        , Svg.g [stroke "red"] (renderTile tile)
         ]
       ]

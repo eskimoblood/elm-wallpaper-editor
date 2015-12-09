@@ -34,6 +34,7 @@
   padding: 10px;
 }
 
+
 html {
   height: 100%;
 }
@@ -129,4 +130,13 @@ input[type="range"]::-webkit-slider-thumb {
 
 .drawingArea{
   cursor: crosshair;
+}
+
+.drawingArea svg{
+  width: 100px;
+  height: 100px;
+}
+
+.main svg {
+  width: 100%;
 }

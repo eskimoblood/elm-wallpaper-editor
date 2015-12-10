@@ -10392,9 +10392,14 @@ Elm.Editor.Model.make = function (_elm) {
    var initialModel = {patternState: initialPatternState
                       ,drawingState: initialDrawingState
                       ,seed: 0
-                      ,history: _U.list([])};
-   var Model = F4(function (a,b,c,d) {
-      return {patternState: a,drawingState: b,history: c,seed: d};
+                      ,undoStack: _U.list([])
+                      ,redoStack: _U.list([])};
+   var Model = F5(function (a,b,c,d,e) {
+      return {patternState: a
+             ,drawingState: b
+             ,undoStack: c
+             ,redoStack: d
+             ,seed: e};
    });
    var DrawingState = F4(function (a,b,c,d) {
       return {lineStart: a
@@ -10485,24 +10490,46 @@ Elm.Editor.Action.make = function (_elm) {
    $WallpaperGroup$Group = Elm.WallpaperGroup.Group.make(_elm),
    $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
    var _op = {};
-   var undo = function (model) {
+   var redo = function (model) {
       var newHistory = A2($Maybe.withDefault,
       _U.list([]),
-      $List.tail(model.history));
-      var lastState = $List.head(model.history);
+      $List.tail(model.redoStack));
+      var actualState = model.patternState;
+      var lastState = $List.head(model.redoStack);
+      var undoStack = model.undoStack;
       var _p0 = lastState;
       if (_p0.ctor === "Just") {
             return _U.update(model,
-            {history: newHistory,patternState: _p0._0});
+            {redoStack: newHistory
+            ,patternState: _p0._0
+            ,undoStack: A2($List._op["::"],actualState,undoStack)});
+         } else {
+            return model;
+         }
+   };
+   var undo = function (model) {
+      var redoStack = model.redoStack;
+      var undoStack = model.undoStack;
+      var actualState = model.patternState;
+      var lastState = $List.head(model.undoStack);
+      var _p1 = lastState;
+      if (_p1.ctor === "Just") {
+            return _U.update(model,
+            {undoStack: A2($Maybe.withDefault,
+            _U.list([]),
+            $List.tail(undoStack))
+            ,patternState: _p1._0
+            ,redoStack: A2($List._op["::"],actualState,redoStack)});
          } else {
             return model;
          }
    };
    var addHistory = function (model) {
-      var history = model.history;
+      var undoStack = model.undoStack;
       var actualState = model.patternState;
       return _U.update(model,
-      {history: A2($List._op["::"],actualState,history)});
+      {undoStack: A2($List._op["::"],actualState,undoStack)
+      ,redoStack: _U.list([])});
    };
    var getRandom = F3(function (seed,min,max) {
       var generator = A2($Random.$int,min,max);
@@ -10511,9 +10538,9 @@ Elm.Editor.Action.make = function (_elm) {
    });
    var getRandomCoord = F3(function (points,seed,i) {
       var getValue = function (item) {
-         var _p1 = item;
-         if (_p1.ctor === "Just") {
-               return _p1._0;
+         var _p2 = item;
+         if (_p2.ctor === "Just") {
+               return _p2._0;
             } else {
                return {x: 0,y: 0};
             }
@@ -10566,60 +10593,60 @@ Elm.Editor.Action.make = function (_elm) {
    var update = F2(function (action,model) {
       var drawingState = model.drawingState;
       var patternState = model.patternState;
-      var _p2 = action;
-      switch (_p2.ctor)
+      var _p3 = action;
+      switch (_p3.ctor)
       {case "Rows": var model = addHistory(model);
            return _U.update(model,
-           {patternState: _U.update(patternState,{rows: _p2._0})});
+           {patternState: _U.update(patternState,{rows: _p3._0})});
          case "Columns": var model = addHistory(model);
            return _U.update(model,
-           {patternState: _U.update(patternState,{columns: _p2._0})});
-         case "Group": var _p3 = _p2._0;
+           {patternState: _U.update(patternState,{columns: _p3._0})});
+         case "Group": var _p4 = _p3._0;
            var boundingBox = $WallpaperGroup$Pattern.bounding(A3(getGroup,
-           _p3,
+           _p4,
            100,
            100));
            var model = addHistory(model);
            return _U.update(model,
            {patternState: _U.update(patternState,
-           {group: A3(getGroup,_p3,patternState.height,patternState.width)
-           ,groupType: _p3
+           {group: A3(getGroup,_p4,patternState.height,patternState.width)
+           ,groupType: _p4
            ,boundingBox: $WallpaperGroup$Pattern.bounding(A3(getGroup,
-           _p3,
+           _p4,
            patternState.height,
            patternState.width))})
            ,drawingState: _U.update(drawingState,
            {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
            patternState.rasterSize,
-           $WallpaperGroup$Pattern.bounding(A3(getGroup,_p3,100,100)))})});
-         case "RasterSize": var _p4 = _p2._0;
+           $WallpaperGroup$Pattern.bounding(A3(getGroup,_p4,100,100)))})});
+         case "RasterSize": var _p5 = _p3._0;
            var model = addHistory(model);
            return _U.update(model,
            {patternState: _U.update(patternState,
-           {rasterSize: _p4,tile: _U.list([])})
+           {rasterSize: _p5,tile: _U.list([])})
            ,drawingState: _U.update(drawingState,
            {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
-           _p4,
+           _p5,
            $WallpaperGroup$Pattern.bounding(A3(getGroup,
            patternState.groupType,
            100,
            100)))})});
-         case "LineStart": var _p5 = _p2._0;
+         case "LineStart": var _p6 = _p3._0;
            return _U.update(model,
            {drawingState: _U.update(drawingState,
            {lineStart: A2($Editor$Util$Geom.snap,
            drawingState.rasterCoords,
-           _p5)
+           _p6)
            ,lineEnd: A2($Editor$Util$Geom.snap,
            drawingState.rasterCoords,
-           _p5)
+           _p6)
            ,isDrawing: true})});
          case "LineMove":
          return drawingState.isDrawing ? _U.update(model,
            {drawingState: _U.update(drawingState,
            {lineEnd: A2($Editor$Util$Geom.snap,
            drawingState.rasterCoords,
-           _p2._0)})}) : model;
+           _p3._0)})}) : model;
          case "LineEnd": var model = addHistory(model);
            return _U.update(model,
            {drawingState: _U.update(drawingState,{isDrawing: false})
@@ -10639,7 +10666,7 @@ Elm.Editor.Action.make = function (_elm) {
            {patternState: _U.update(patternState,{tile: l})
            ,seed: A3(getRandom,model.seed,$Random.minInt,$Random.maxInt)});
          case "Undo": return undo(model);
-         default: return model;}
+         default: return redo(model);}
    });
    var Redo = {ctor: "Redo"};
    var Undo = {ctor: "Undo"};
@@ -10679,6 +10706,7 @@ Elm.Editor.Action.make = function (_elm) {
                                       ,getRandomCoord: getRandomCoord
                                       ,addHistory: addHistory
                                       ,undo: undo
+                                      ,redo: redo
                                       ,update: update};
 };
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -14274,7 +14302,15 @@ Elm.Editor.View.make = function (_elm) {
                       function (_p2) {
                          return A2($Signal.message,address,$Editor$Action.Undo);
                       })]),
-                      _U.list([$Html.text("Undo")]))]))
+                      _U.list([$Html.text("Undo")]))
+                      ,A2($Html.button,
+                      _U.list([A3($Html$Events.on,
+                      "click",
+                      $Html$Events.targetValue,
+                      function (_p3) {
+                         return A2($Signal.message,address,$Editor$Action.Redo);
+                      })]),
+                      _U.list([$Html.text("Redo")]))]))
               ,A2($Html.div,
               _U.list([$Html$Attributes.$class("main lalasd")]),
               _U.list([$Editor$Ui$PatternStage.stage(patternState)]))]));

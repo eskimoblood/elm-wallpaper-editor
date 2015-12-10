@@ -19,6 +19,7 @@ type Action
   | LineStart Point
   | LineMove Point
   | LineEnd Point
+  | DeleteLine Point
   | ClearTiles
   | Random
   | Undo
@@ -110,24 +111,54 @@ addHistory : Model -> Model
 addHistory model =
   let
     actualState = model.patternState
-    history = model.history
+    undoStack = model.undoStack
   in
-     {model | history = actualState :: history}
+    { model
+    | undoStack = actualState :: undoStack
+    , redoStack = []
+    }
 
 
 undo : Model -> Model
 undo model =
   let
-    lastState = List.head model.history
-    newHistory = List.tail model.history |> (Maybe.withDefault [])
+    lastState = List.head model.undoStack
+    actualState = model.patternState
+    undoStack = model.undoStack
+    redoStack = model.redoStack
   in
     case lastState of
 
       Just state ->
-        {model | history = newHistory, patternState = state}
+        { model
+        | undoStack = Maybe.withDefault [] (List.tail undoStack)
+        , patternState = state
+        , redoStack = actualState :: redoStack
+        }
 
       Nothing ->
         model
+
+redo : Model -> Model
+redo model =
+  let
+    undoStack = model.undoStack
+    actualState = model.patternState
+    lastState = List.head model.redoStack
+    newHistory = List.tail model.redoStack |> (Maybe.withDefault [])
+  in
+    case lastState of
+
+      Just state ->
+        { model
+        | redoStack = newHistory
+        , patternState = state
+        , undoStack = actualState :: undoStack
+        }
+
+      Nothing ->
+        model
+
 
 
 update : Action -> Model -> Model
@@ -207,6 +238,9 @@ update action model =
             drawingState = { drawingState | isDrawing = False },
             patternState = { patternState | tile = [drawingState.lineStart, drawingState.lineEnd] :: patternState.tile}
           }
+      DeleteLine mousePosition ->
+        let
+          tile = List.filter (lineIsNearPoint mousePosition 5) model.tile
 
       ClearTiles ->
         let
@@ -230,4 +264,4 @@ update action model =
         undo model
 
       Redo ->
-        model
+        redo model

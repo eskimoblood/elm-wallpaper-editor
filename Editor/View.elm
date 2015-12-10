@@ -61,6 +61,11 @@ view address model =
               ]
               [Html.text "Undo"
               ]
+          , button
+              [ on "click" targetValue (\_ -> Signal.message address Redo)
+              ]
+              [Html.text "Redo"
+              ]
           ]
       , div
           [ Attr.class "main lalasd"

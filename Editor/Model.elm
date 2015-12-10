@@ -29,7 +29,8 @@ type alias DrawingState =
 type alias Model =
   { patternState : PatternState
   , drawingState : DrawingState
-  , history: List PatternState
+  , undoStack: List PatternState
+  , redoStack: List PatternState
   , seed: Int
   }
 
@@ -59,5 +60,6 @@ initialModel =
   { patternState = initialPatternState
   , drawingState = initialDrawingState
   , seed = 0
-  , history = []
+  , undoStack = []
+  , redoStack = []
   }

@@ -219,7 +219,8 @@ update action model =
             lineStart = snap drawingState.rasterCoords mousePosition,
             lineEnd = snap drawingState.rasterCoords mousePosition,
             isDrawing = True
-        }}
+          }
+        }
 
       LineMove mousePosition ->
         if drawingState.isDrawing then
@@ -231,16 +232,25 @@ update action model =
           model
 
       LineEnd mousePosition ->
-        let
-          model = addHistory model
-        in
-          { model |
-            drawingState = { drawingState | isDrawing = False },
-            patternState = { patternState | tile = [drawingState.lineStart, drawingState.lineEnd] :: patternState.tile}
-          }
+        if drawingState.isDrawing then
+          let
+            model = addHistory model
+          in
+            { model |
+              drawingState = { drawingState | isDrawing = False },
+              patternState = { patternState | tile = [drawingState.lineStart, drawingState.lineEnd] :: patternState.tile}
+            }
+        else
+          model
+
       DeleteLine mousePosition ->
         let
-          tile = List.filter (lineIsNearPoint mousePosition 5) model.tile
+          model = addHistory model
+          tile = List.filter (lineIsNearPoint mousePosition 5) patternState.tile
+        in
+          { model |
+            patternState = {patternState | tile = tile }
+          }
 
       ClearTiles ->
         let
@@ -260,6 +270,7 @@ update action model =
             patternState = {patternState | tile = l},
             seed = getRandom model.seed Random.minInt Random.maxInt
           }
+
       Undo ->
         undo model
 

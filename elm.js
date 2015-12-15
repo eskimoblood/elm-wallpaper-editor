@@ -10446,6 +10446,41 @@ Elm.Editor.Util.Geom.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
+   var coords = F7(function (param,x1,x2,y1,y2,c,d) {
+      return _U.cmp(param,0) < 0 || _U.eq(x1,x2) && _U.eq(y1,
+      y2) ? {ctor: "_Tuple2",_0: x1,_1: y1} : _U.cmp(param,
+      1) > 0 ? {ctor: "_Tuple2",_0: x2,_1: y2} : {ctor: "_Tuple2"
+                                                 ,_0: x1 + param * c
+                                                 ,_1: y1 + param * d};
+   });
+   var multiLineToTuple = function (line) {
+      var p1 = A2($Maybe.withDefault,{x: 0,y: 0},$List.head(line));
+      var p2 = A2($Maybe.withDefault,
+      p1,
+      $List.head(A2($List.drop,1,line)));
+      return {ctor: "_Tuple2",_0: p1,_1: p2};
+   };
+   var lineIsNearPoint = F3(function (p,distance,line$) {
+      var line = multiLineToTuple(line$);
+      var p1 = $Basics.fst(line);
+      var x1 = p1.x;
+      var a = p.x - x1;
+      var y1 = p1.y;
+      var b = p.y - y1;
+      var p2 = $Basics.snd(line);
+      var x2 = p2.x;
+      var c = x2 - x1;
+      var y2 = p2.y;
+      var d = y2 - y1;
+      var dot = a * c + b * d;
+      var len_sq = c * c + d * d;
+      var param = dot / len_sq;
+      var cords = A7(coords,param,x1,x2,y1,y2,c,d);
+      var dx = p.x - $Basics.fst(cords);
+      var dy = p.y - $Basics.snd(cords);
+      var actualDistance = $Basics.sqrt(dx) * dx + dy * dy;
+      return _U.cmp(actualDistance,distance) > 0;
+   });
    var distance = F2(function (p1,p2) {
       return $Basics.sqrt(Math.pow(p1.x - p2.x,
       2) + Math.pow(p1.y - p2.y,2));
@@ -10465,7 +10500,10 @@ Elm.Editor.Util.Geom.make = function (_elm) {
    return _elm.Editor.Util.Geom.values = {_op: _op
                                          ,distance: distance
                                          ,findShortest: findShortest
-                                         ,snap: snap};
+                                         ,snap: snap
+                                         ,multiLineToTuple: multiLineToTuple
+                                         ,coords: coords
+                                         ,lineIsNearPoint: lineIsNearPoint};
 };
 Elm.Editor = Elm.Editor || {};
 Elm.Editor.Action = Elm.Editor.Action || {};
@@ -10494,8 +10532,8 @@ Elm.Editor.Action.make = function (_elm) {
       var newHistory = A2($Maybe.withDefault,
       _U.list([]),
       $List.tail(model.redoStack));
-      var actualState = model.patternState;
       var lastState = $List.head(model.redoStack);
+      var actualState = model.patternState;
       var undoStack = model.undoStack;
       var _p0 = lastState;
       if (_p0.ctor === "Just") {
@@ -10647,13 +10685,21 @@ Elm.Editor.Action.make = function (_elm) {
            {lineEnd: A2($Editor$Util$Geom.snap,
            drawingState.rasterCoords,
            _p3._0)})}) : model;
-         case "LineEnd": var model = addHistory(model);
+         case "LineEnd": if (drawingState.isDrawing) {
+                 var model = addHistory(model);
+                 return _U.update(model,
+                 {drawingState: _U.update(drawingState,{isDrawing: false})
+                 ,patternState: _U.update(patternState,
+                 {tile: A2($List._op["::"],
+                 _U.list([drawingState.lineStart,drawingState.lineEnd]),
+                 patternState.tile)})});
+              } else return model;
+         case "DeleteLine": var tile = A2($List.filter,
+           A2($Editor$Util$Geom.lineIsNearPoint,_p3._0,5),
+           patternState.tile);
+           var model = addHistory(model);
            return _U.update(model,
-           {drawingState: _U.update(drawingState,{isDrawing: false})
-           ,patternState: _U.update(patternState,
-           {tile: A2($List._op["::"],
-           _U.list([drawingState.lineStart,drawingState.lineEnd]),
-           patternState.tile)})});
+           {patternState: _U.update(patternState,{tile: tile})});
          case "ClearTiles": var model = addHistory(model);
            return _U.update(model,
            {patternState: _U.update(patternState,{tile: _U.list([])})});
@@ -10672,6 +10718,9 @@ Elm.Editor.Action.make = function (_elm) {
    var Undo = {ctor: "Undo"};
    var Random = {ctor: "Random"};
    var ClearTiles = {ctor: "ClearTiles"};
+   var DeleteLine = function (a) {
+      return {ctor: "DeleteLine",_0: a};
+   };
    var LineEnd = function (a) {
       return {ctor: "LineEnd",_0: a};
    };
@@ -10697,6 +10746,7 @@ Elm.Editor.Action.make = function (_elm) {
                                       ,LineStart: LineStart
                                       ,LineMove: LineMove
                                       ,LineEnd: LineEnd
+                                      ,DeleteLine: DeleteLine
                                       ,ClearTiles: ClearTiles
                                       ,Random: Random
                                       ,Undo: Undo
@@ -14062,6 +14112,20 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
    $Svg = Elm.Svg.make(_elm),
    $Svg$Attributes = Elm.Svg.Attributes.make(_elm);
    var _op = {};
+   var sendMousePositionOrDelete = F2(function (sendAction,
+   mouseData) {
+      var mouseData = A2($Debug.log,"m",mouseData);
+      return $Basics.snd(mouseData) ? A2(sendAction,
+      $Editor$Action.DeleteLine,
+      $Basics.fst(mouseData)) : A2(sendAction,
+      $Editor$Action.LineStart,
+      $Basics.fst(mouseData));
+   });
+   var sendMousePosition = F3(function (sendAction,
+   action,
+   mouseData) {
+      return A2(sendAction,action,$Basics.fst(mouseData));
+   });
    var preview = function (model) {
       var childs = model.isDrawing ? _U.list([A2($Svg.line,
       _U.list([$Svg$Attributes.x1($Basics.toString(model.lineStart.x))
@@ -14075,10 +14139,13 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
    var sendTo = F3(function (address,action,point) {
       return A2($Signal.message,address,action(point));
    });
-   var mousePosition = A3($Json$Decode.object2,
-   F2(function (x,y) {    return {x: x,y: y};}),
+   var mousePosition = A4($Json$Decode.object3,
+   F3(function (x,y,altKeyPressed) {
+      return {ctor: "_Tuple2",_0: {x: x,y: y},_1: altKeyPressed};
+   }),
    A2($Json$Decode._op[":="],"offsetX",$Json$Decode.$float),
-   A2($Json$Decode._op[":="],"offsetY",$Json$Decode.$float));
+   A2($Json$Decode._op[":="],"offsetY",$Json$Decode.$float),
+   A2($Json$Decode._op[":="],"altKey",$Json$Decode.bool));
    var renderPoint = function (p) {
       return A2($Svg.circle,
       _U.list([$Svg$Attributes.cx($Basics.toString(p.x))
@@ -14092,15 +14159,15 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
       _U.list([A3($Html$Events.on,
               "mousedown",
               mousePosition,
-              sendAction($Editor$Action.LineStart))
+              sendMousePositionOrDelete(sendAction))
               ,A3($Html$Events.on,
               "mousemove",
               mousePosition,
-              sendAction($Editor$Action.LineMove))
+              A2(sendMousePosition,sendAction,$Editor$Action.LineMove))
               ,A3($Html$Events.on,
               "mouseup",
               mousePosition,
-              sendAction($Editor$Action.LineEnd))
+              A2(sendMousePosition,sendAction,$Editor$Action.LineEnd))
               ,$Html$Attributes.$class("drawingArea")]),
       _U.list([A2($Svg.svg,
       _U.list([$Svg$Attributes.version("1.1")
@@ -14119,6 +14186,8 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
                                          ,mousePosition: mousePosition
                                          ,sendTo: sendTo
                                          ,preview: preview
+                                         ,sendMousePosition: sendMousePosition
+                                         ,sendMousePositionOrDelete: sendMousePositionOrDelete
                                          ,raster: raster};
 };
 Elm.Editor = Elm.Editor || {};

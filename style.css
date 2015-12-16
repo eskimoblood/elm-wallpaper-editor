@@ -133,8 +133,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .drawingArea svg{
-  width: 100px;
-  height: 100px;
+  width: 200px;
+  height: 200px;
 }
 
 .main svg {

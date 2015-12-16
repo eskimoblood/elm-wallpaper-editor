@@ -13,6 +13,7 @@ type alias PatternState =
   , width : Float
   , height : Float
   , group : Group
+  , previewGroup : Group
   , groupType : String
   , boundingBox : BoundingBox
   , rasterSize : Float
@@ -36,22 +37,23 @@ type alias Model =
 
 initialPatternState : PatternState
 initialPatternState =
-  { columns= 10
-  , rows= 10
-  , width= 40
-  , height =40
-  , groupType= "P1"
-  , rasterSize= 4
+  { columns = 10
+  , rows = 10
+  , width = 40
+  , height = 40
+  , groupType = "P1"
+  , rasterSize = 4
   , boundingBox = Pattern.bounding (P1 20 20)
-  , tile= []
-  , group= P1 40 40
+  , tile = []
+  , group = P1 40 40
+  , previewGroup = P1 100 100
   }
 
 initialDrawingState : DrawingState
 initialDrawingState =
-  { lineStart={x=0, y=0}
-  , lineEnd={x=0, y=0}
-  , isDrawing=False
+  { lineStart = {x=0, y=0}
+  , lineEnd = {x=0, y=0}
+  , isDrawing = False
   , rasterCoords = rasterCoords 4 (Pattern.bounding (P1 100 100))
   }
 

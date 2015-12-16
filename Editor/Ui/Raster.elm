@@ -12,9 +12,10 @@ import Editor.Types exposing (..)
 import Editor.Action exposing (..)
 import Editor.Model exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
-import Editor.Util.Svg exposing (renderTile)
+import Editor.Util.Svg exposing (renderTiles, renderTile)
 import Debug exposing (log)
 import WallpaperGroup.Geom.BoundingBox exposing (..)
+import WallpaperGroup.Group exposing (..)
 
 renderPoint : Point -> Svg
 renderPoint p =
@@ -72,8 +73,8 @@ sendMousePositionOrDelete sendAction  mouseData =
     else
       sendAction LineStart (fst mouseData)
 
-raster : DrawingState -> Tile -> Signal.Address Action -> Html
-raster model tile address=
+raster : DrawingState -> Tile -> Group -> Signal.Address Action -> Html
+raster model tile group address=
   let
     sendAction = sendTo address
   in
@@ -86,8 +87,9 @@ raster model tile address=
     [ Svg.svg
         [ version "1.1", x "0", y "0"
         ]
-        [ g [](List.map renderPoint model.rasterCoords)
+        [ (renderTiles group 1 1 tile)
+        , Svg.g [](List.map renderPoint model.rasterCoords)
         , preview model
-        , Svg.g [stroke "red"] (renderTile tile)
+        , Svg.g [stroke "red"] [(renderTile tile)]
         ]
       ]

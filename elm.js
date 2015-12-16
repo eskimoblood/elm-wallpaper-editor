@@ -10388,7 +10388,8 @@ Elm.Editor.Model.make = function (_elm) {
                              20,
                              20))
                              ,tile: _U.list([])
-                             ,group: A2($WallpaperGroup$Group.P1,40,40)};
+                             ,group: A2($WallpaperGroup$Group.P1,40,40)
+                             ,previewGroup: A2($WallpaperGroup$Group.P1,100,100)};
    var initialModel = {patternState: initialPatternState
                       ,drawingState: initialDrawingState
                       ,seed: 0
@@ -10407,17 +10408,36 @@ Elm.Editor.Model.make = function (_elm) {
              ,isDrawing: c
              ,rasterCoords: d};
    });
-   var PatternState = F9(function (a,b,c,d,e,f,g,h,i) {
-      return {columns: a
-             ,rows: b
-             ,width: c
-             ,height: d
-             ,group: e
-             ,groupType: f
-             ,boundingBox: g
-             ,rasterSize: h
-             ,tile: i};
-   });
+   var PatternState = function (a) {
+      return function (b) {
+         return function (c) {
+            return function (d) {
+               return function (e) {
+                  return function (f) {
+                     return function (g) {
+                        return function (h) {
+                           return function (i) {
+                              return function (j) {
+                                 return {columns: a
+                                        ,rows: b
+                                        ,width: c
+                                        ,height: d
+                                        ,group: e
+                                        ,previewGroup: f
+                                        ,groupType: g
+                                        ,boundingBox: h
+                                        ,rasterSize: i
+                                        ,tile: j};
+                              };
+                           };
+                        };
+                     };
+                  };
+               };
+            };
+         };
+      };
+   };
    return _elm.Editor.Model.values = {_op: _op
                                      ,PatternState: PatternState
                                      ,DrawingState: DrawingState
@@ -10648,6 +10668,7 @@ Elm.Editor.Action.make = function (_elm) {
            return _U.update(model,
            {patternState: _U.update(patternState,
            {group: A3(getGroup,_p4,patternState.height,patternState.width)
+           ,previewGroup: A3(getGroup,_p4,100,100)
            ,groupType: _p4
            ,boundingBox: $WallpaperGroup$Pattern.bounding(A3(getGroup,
            _p4,
@@ -14057,7 +14078,9 @@ Elm.Editor.Util.Svg.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $Svg = Elm.Svg.make(_elm),
-   $Svg$Attributes = Elm.Svg.Attributes.make(_elm);
+   $Svg$Attributes = Elm.Svg.Attributes.make(_elm),
+   $WallpaperGroup$Group = Elm.WallpaperGroup.Group.make(_elm),
+   $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
    var _op = {};
    var lineToAttribute = F2(function (_p0,attributes) {
       var _p1 = _p0;
@@ -14077,12 +14100,22 @@ Elm.Editor.Util.Svg.make = function (_elm) {
       _U.list([]));
    };
    var renderTile = function (tile) {
-      return A2($List.map,renderLine,tile);
+      return A2($Svg.g,
+      _U.list([$Svg$Attributes.stroke("grey")]),
+      A2($List.map,renderLine,tile));
    };
+   var renderTiles = F4(function (group,columns,rows,tile) {
+      return A2($Svg.g,
+      _U.list([]),
+      A2($List.map,
+      renderTile,
+      A4($WallpaperGroup$Pattern.pattern,group,columns,rows,tile)));
+   });
    return _elm.Editor.Util.Svg.values = {_op: _op
                                         ,lineToAttribute: lineToAttribute
                                         ,renderLine: renderLine
-                                        ,renderTile: renderTile};
+                                        ,renderTile: renderTile
+                                        ,renderTiles: renderTiles};
 };
 Elm.Editor = Elm.Editor || {};
 Elm.Editor.Ui = Elm.Editor.Ui || {};
@@ -14110,7 +14143,8 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $Svg = Elm.Svg.make(_elm),
-   $Svg$Attributes = Elm.Svg.Attributes.make(_elm);
+   $Svg$Attributes = Elm.Svg.Attributes.make(_elm),
+   $WallpaperGroup$Group = Elm.WallpaperGroup.Group.make(_elm);
    var _op = {};
    var sendMousePositionOrDelete = F2(function (sendAction,
    mouseData) {
@@ -14153,7 +14187,7 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
               ,$Svg$Attributes.r("1")]),
       _U.list([]));
    };
-   var raster = F3(function (model,tile,address) {
+   var raster = F4(function (model,tile,group,address) {
       var sendAction = sendTo(address);
       return A2($Html.div,
       _U.list([A3($Html$Events.on,
@@ -14173,13 +14207,14 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
       _U.list([$Svg$Attributes.version("1.1")
               ,$Svg$Attributes.x("0")
               ,$Svg$Attributes.y("0")]),
-      _U.list([A2($Svg.g,
+      _U.list([A4($Editor$Util$Svg.renderTiles,group,1,1,tile)
+              ,A2($Svg.g,
               _U.list([]),
               A2($List.map,renderPoint,model.rasterCoords))
               ,preview(model)
               ,A2($Svg.g,
               _U.list([$Svg$Attributes.stroke("red")]),
-              $Editor$Util$Svg.renderTile(tile))]))]));
+              _U.list([$Editor$Util$Svg.renderTile(tile)]))]))]));
    });
    return _elm.Editor.Ui.Raster.values = {_op: _op
                                          ,renderPoint: renderPoint
@@ -14252,14 +14287,8 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $Svg = Elm.Svg.make(_elm),
-   $Svg$Attributes = Elm.Svg.Attributes.make(_elm),
-   $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
+   $Svg$Attributes = Elm.Svg.Attributes.make(_elm);
    var _op = {};
-   var renderTiles = function (tile) {
-      return A2($Svg.g,
-      _U.list([$Svg$Attributes.stroke("grey")]),
-      $Editor$Util$Svg.renderTile(tile));
-   };
    var scalePoint = F2(function (_p0,p) {
       var _p1 = _p0;
       return {x: p.x / 100 * _p1.width,y: p.y / 100 * _p1.height};
@@ -14272,19 +14301,14 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
       _U.list([$Svg$Attributes.version("1.1")
               ,$Svg$Attributes.x("0")
               ,$Svg$Attributes.y("0")]),
-      _U.list([A2($Svg.g,
-      _U.list([]),
-      A2($List.map,
-      renderTiles,
-      A4($WallpaperGroup$Pattern.pattern,
+      _U.list([A4($Editor$Util$Svg.renderTiles,
       model.group,
       model.columns,
       model.rows,
-      tile)))]));
+      tile)]));
    };
    return _elm.Editor.Ui.PatternStage.values = {_op: _op
                                                ,scalePoint: scalePoint
-                                               ,renderTiles: renderTiles
                                                ,stage: stage};
 };
 Elm.Editor = Elm.Editor || {};
@@ -14344,9 +14368,10 @@ Elm.Editor.View.make = function (_elm) {
                       ,A2($Editor$Ui$GroupSelect.groupSelect,
                       patternState.groupType,
                       address)
-                      ,A3($Editor$Ui$Raster.raster,
+                      ,A4($Editor$Ui$Raster.raster,
                       drawingState,
                       patternState.tile,
+                      patternState.previewGroup,
                       address)
                       ,A2($Html.button,
                       _U.list([A3($Html$Events.on,

@@ -45,7 +45,7 @@ view address model =
                    , createAction= \str -> Rows(Convert.toInt str)
                    }
           , groupSelect patternState.groupType address
-          , raster drawingState patternState.tile address
+          , raster drawingState patternState.tile patternState.previewGroup address
           , button
               [ on "click" targetValue (\_ -> Signal.message address ClearTiles)
               ]

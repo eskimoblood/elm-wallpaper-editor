@@ -189,6 +189,7 @@ update action model =
             patternState =
               { patternState |
                 group = getGroup value patternState.height patternState.width
+              , previewGroup = getGroup value 100 100
               , groupType = value
               , boundingBox = Pattern.bounding (getGroup value patternState.height patternState.width)
               },

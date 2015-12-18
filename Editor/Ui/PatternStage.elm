@@ -5,12 +5,13 @@ import Svg.Attributes exposing (..)
 import Editor.Types exposing (Tile, Point)
 import Editor.Model exposing (PatternState)
 import Editor.Util.Svg exposing (renderTiles)
+import Editor.Util.TileSize exposing (..)
 
 
-scalePoint : {a | width: Float, height: Float} -> Point -> Point
-scalePoint {width, height} p =
-  { x= p.x / 100 * width
-  , y= p.y / 100 * height
+scalePoint : {a | width: Float, height: Float, groupType: String} -> Point -> Point
+scalePoint {width, height, groupType} p =
+  { x= p.x / (getTileSize groupType) * width
+  , y= p.y / (getTileSize groupType) * height
   }
 
 stage : PatternState -> Svg

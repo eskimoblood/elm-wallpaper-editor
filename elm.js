@@ -3476,46 +3476,6 @@ Elm.Color.make = function (_elm) {
                               ,gray: gray
                               ,darkGray: darkGray};
 };
-Elm.Native.Date = {};
-Elm.Native.Date.make = function(localRuntime) {
-	localRuntime.Native = localRuntime.Native || {};
-	localRuntime.Native.Date = localRuntime.Native.Date || {};
-	if (localRuntime.Native.Date.values)
-	{
-		return localRuntime.Native.Date.values;
-	}
-
-	var Result = Elm.Result.make(localRuntime);
-
-	function readDate(str)
-	{
-		var date = new Date(str);
-		return isNaN(date.getTime())
-			? Result.Err('unable to parse \'' + str + '\' as a date')
-			: Result.Ok(date);
-	}
-
-	var dayTable = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-	var monthTable =
-		['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-		 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-
-	return localRuntime.Native.Date.values = {
-		read: readDate,
-		year: function(d) { return d.getFullYear(); },
-		month: function(d) { return { ctor: monthTable[d.getMonth()] }; },
-		day: function(d) { return d.getDate(); },
-		hour: function(d) { return d.getHours(); },
-		minute: function(d) { return d.getMinutes(); },
-		second: function(d) { return d.getSeconds(); },
-		millisecond: function(d) { return d.getMilliseconds(); },
-		toTime: function(d) { return d.getTime(); },
-		fromTime: function(t) { return new Date(t); },
-		dayOfWeek: function(d) { return { ctor: dayTable[d.getDay()] }; }
-	};
-};
-
 Elm.Native.Signal = {};
 
 Elm.Native.Signal.make = function(localRuntime) {
@@ -3984,116 +3944,6 @@ Elm.Native.Signal.make = function(localRuntime) {
 		dropRepeats: dropRepeats,
 		timestamp: timestamp,
 		delay: F2(delay)
-	};
-};
-
-Elm.Native.Time = {};
-
-Elm.Native.Time.make = function(localRuntime)
-{
-	localRuntime.Native = localRuntime.Native || {};
-	localRuntime.Native.Time = localRuntime.Native.Time || {};
-	if (localRuntime.Native.Time.values)
-	{
-		return localRuntime.Native.Time.values;
-	}
-
-	var NS = Elm.Native.Signal.make(localRuntime);
-	var Maybe = Elm.Maybe.make(localRuntime);
-
-
-	// FRAMES PER SECOND
-
-	function fpsWhen(desiredFPS, isOn)
-	{
-		var msPerFrame = 1000 / desiredFPS;
-		var ticker = NS.input('fps-' + desiredFPS, null);
-
-		function notifyTicker()
-		{
-			localRuntime.notify(ticker.id, null);
-		}
-
-		function firstArg(x, y)
-		{
-			return x;
-		}
-
-		// input fires either when isOn changes, or when ticker fires.
-		// Its value is a tuple with the current timestamp, and the state of isOn
-		var input = NS.timestamp(A3(NS.map2, F2(firstArg), NS.dropRepeats(isOn), ticker));
-
-		var initialState = {
-			isOn: false,
-			time: localRuntime.timer.programStart,
-			delta: 0
-		};
-
-		var timeoutId;
-
-		function update(input, state)
-		{
-			var currentTime = input._0;
-			var isOn = input._1;
-			var wasOn = state.isOn;
-			var previousTime = state.time;
-
-			if (isOn)
-			{
-				timeoutId = localRuntime.setTimeout(notifyTicker, msPerFrame);
-			}
-			else if (wasOn)
-			{
-				clearTimeout(timeoutId);
-			}
-
-			return {
-				isOn: isOn,
-				time: currentTime,
-				delta: (isOn && !wasOn) ? 0 : currentTime - previousTime
-			};
-		}
-
-		return A2(
-			NS.map,
-			function(state) { return state.delta; },
-			A3(NS.foldp, F2(update), update(input.value, initialState), input)
-		);
-	}
-
-
-	// EVERY
-
-	function every(t)
-	{
-		var ticker = NS.input('every-' + t, null);
-		function tellTime()
-		{
-			localRuntime.notify(ticker.id, null);
-		}
-		var clock = A2(NS.map, fst, NS.timestamp(ticker));
-		setInterval(tellTime, t);
-		return clock;
-	}
-
-
-	function fst(pair)
-	{
-		return pair._0;
-	}
-
-
-	function read(s)
-	{
-		var t = Date.parse(s);
-		return isNaN(t) ? Maybe.Nothing : Maybe.Just(t);
-	}
-
-	return localRuntime.Native.Time.values = {
-		fpsWhen: F2(fpsWhen),
-		every: every,
-		toDate: function(t) { return new Date(t); },
-		read: read
 	};
 };
 
@@ -7293,134 +7143,6 @@ Elm.Signal.make = function (_elm) {
                                ,forwardTo: forwardTo
                                ,Mailbox: Mailbox};
 };
-Elm.Time = Elm.Time || {};
-Elm.Time.make = function (_elm) {
-   "use strict";
-   _elm.Time = _elm.Time || {};
-   if (_elm.Time.values) return _elm.Time.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Basics = Elm.Basics.make(_elm),
-   $Native$Signal = Elm.Native.Signal.make(_elm),
-   $Native$Time = Elm.Native.Time.make(_elm),
-   $Signal = Elm.Signal.make(_elm);
-   var _op = {};
-   var delay = $Native$Signal.delay;
-   var since = F2(function (time,signal) {
-      var stop = A2($Signal.map,
-      $Basics.always(-1),
-      A2(delay,time,signal));
-      var start = A2($Signal.map,$Basics.always(1),signal);
-      var delaydiff = A3($Signal.foldp,
-      F2(function (x,y) {    return x + y;}),
-      0,
-      A2($Signal.merge,start,stop));
-      return A2($Signal.map,
-      F2(function (x,y) {    return !_U.eq(x,y);})(0),
-      delaydiff);
-   });
-   var timestamp = $Native$Signal.timestamp;
-   var every = $Native$Time.every;
-   var fpsWhen = $Native$Time.fpsWhen;
-   var fps = function (targetFrames) {
-      return A2(fpsWhen,targetFrames,$Signal.constant(true));
-   };
-   var inMilliseconds = function (t) {    return t;};
-   var millisecond = 1;
-   var second = 1000 * millisecond;
-   var minute = 60 * second;
-   var hour = 60 * minute;
-   var inHours = function (t) {    return t / hour;};
-   var inMinutes = function (t) {    return t / minute;};
-   var inSeconds = function (t) {    return t / second;};
-   return _elm.Time.values = {_op: _op
-                             ,millisecond: millisecond
-                             ,second: second
-                             ,minute: minute
-                             ,hour: hour
-                             ,inMilliseconds: inMilliseconds
-                             ,inSeconds: inSeconds
-                             ,inMinutes: inMinutes
-                             ,inHours: inHours
-                             ,fps: fps
-                             ,fpsWhen: fpsWhen
-                             ,every: every
-                             ,timestamp: timestamp
-                             ,delay: delay
-                             ,since: since};
-};
-Elm.Date = Elm.Date || {};
-Elm.Date.make = function (_elm) {
-   "use strict";
-   _elm.Date = _elm.Date || {};
-   if (_elm.Date.values) return _elm.Date.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Native$Date = Elm.Native.Date.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Time = Elm.Time.make(_elm);
-   var _op = {};
-   var millisecond = $Native$Date.millisecond;
-   var second = $Native$Date.second;
-   var minute = $Native$Date.minute;
-   var hour = $Native$Date.hour;
-   var dayOfWeek = $Native$Date.dayOfWeek;
-   var day = $Native$Date.day;
-   var month = $Native$Date.month;
-   var year = $Native$Date.year;
-   var fromTime = $Native$Date.fromTime;
-   var toTime = $Native$Date.toTime;
-   var fromString = $Native$Date.read;
-   var Dec = {ctor: "Dec"};
-   var Nov = {ctor: "Nov"};
-   var Oct = {ctor: "Oct"};
-   var Sep = {ctor: "Sep"};
-   var Aug = {ctor: "Aug"};
-   var Jul = {ctor: "Jul"};
-   var Jun = {ctor: "Jun"};
-   var May = {ctor: "May"};
-   var Apr = {ctor: "Apr"};
-   var Mar = {ctor: "Mar"};
-   var Feb = {ctor: "Feb"};
-   var Jan = {ctor: "Jan"};
-   var Sun = {ctor: "Sun"};
-   var Sat = {ctor: "Sat"};
-   var Fri = {ctor: "Fri"};
-   var Thu = {ctor: "Thu"};
-   var Wed = {ctor: "Wed"};
-   var Tue = {ctor: "Tue"};
-   var Mon = {ctor: "Mon"};
-   var Date = {ctor: "Date"};
-   return _elm.Date.values = {_op: _op
-                             ,fromString: fromString
-                             ,toTime: toTime
-                             ,fromTime: fromTime
-                             ,year: year
-                             ,month: month
-                             ,day: day
-                             ,dayOfWeek: dayOfWeek
-                             ,hour: hour
-                             ,minute: minute
-                             ,second: second
-                             ,millisecond: millisecond
-                             ,Jan: Jan
-                             ,Feb: Feb
-                             ,Mar: Mar
-                             ,Apr: Apr
-                             ,May: May
-                             ,Jun: Jun
-                             ,Jul: Jul
-                             ,Aug: Aug
-                             ,Sep: Sep
-                             ,Oct: Oct
-                             ,Nov: Nov
-                             ,Dec: Dec
-                             ,Mon: Mon
-                             ,Tue: Tue
-                             ,Wed: Wed
-                             ,Thu: Thu
-                             ,Fri: Fri
-                             ,Sat: Sat
-                             ,Sun: Sun};
-};
 Elm.Native.String = {};
 
 Elm.Native.String.make = function(localRuntime) {
@@ -9244,6 +8966,135 @@ Elm.Json.Decode.make = function (_elm) {
                                     ,value: value
                                     ,customDecoder: customDecoder};
 };
+Elm.Native.Regex = {};
+Elm.Native.Regex.make = function(localRuntime) {
+	localRuntime.Native = localRuntime.Native || {};
+	localRuntime.Native.Regex = localRuntime.Native.Regex || {};
+	if (localRuntime.Native.Regex.values)
+	{
+		return localRuntime.Native.Regex.values;
+	}
+	if ('values' in Elm.Native.Regex)
+	{
+		return localRuntime.Native.Regex.values = Elm.Native.Regex.values;
+	}
+
+	var List = Elm.Native.List.make(localRuntime);
+	var Maybe = Elm.Maybe.make(localRuntime);
+
+	function escape(str)
+	{
+		return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+	}
+	function caseInsensitive(re)
+	{
+		return new RegExp(re.source, 'gi');
+	}
+	function regex(raw)
+	{
+		return new RegExp(raw, 'g');
+	}
+
+	function contains(re, string)
+	{
+		return string.match(re) !== null;
+	}
+
+	function find(n, re, str)
+	{
+		n = n.ctor === 'All' ? Infinity : n._0;
+		var out = [];
+		var number = 0;
+		var string = str;
+		var lastIndex = re.lastIndex;
+		var prevLastIndex = -1;
+		var result;
+		while (number++ < n && (result = re.exec(string)))
+		{
+			if (prevLastIndex === re.lastIndex) break;
+			var i = result.length - 1;
+			var subs = new Array(i);
+			while (i > 0)
+			{
+				var submatch = result[i];
+				subs[--i] = submatch === undefined
+					? Maybe.Nothing
+					: Maybe.Just(submatch);
+			}
+			out.push({
+				match: result[0],
+				submatches: List.fromArray(subs),
+				index: result.index,
+				number: number
+			});
+			prevLastIndex = re.lastIndex;
+		}
+		re.lastIndex = lastIndex;
+		return List.fromArray(out);
+	}
+
+	function replace(n, re, replacer, string)
+	{
+		n = n.ctor === 'All' ? Infinity : n._0;
+		var count = 0;
+		function jsReplacer(match)
+		{
+			if (count++ >= n)
+			{
+				return match;
+			}
+			var i = arguments.length - 3;
+			var submatches = new Array(i);
+			while (i > 0)
+			{
+				var submatch = arguments[i];
+				submatches[--i] = submatch === undefined
+					? Maybe.Nothing
+					: Maybe.Just(submatch);
+			}
+			return replacer({
+				match: match,
+				submatches: List.fromArray(submatches),
+				index: arguments[i - 1],
+				number: count
+			});
+		}
+		return string.replace(re, jsReplacer);
+	}
+
+	function split(n, re, str)
+	{
+		n = n.ctor === 'All' ? Infinity : n._0;
+		if (n === Infinity)
+		{
+			return List.fromArray(str.split(re));
+		}
+		var string = str;
+		var result;
+		var out = [];
+		var start = re.lastIndex;
+		while (n--)
+		{
+			if (!(result = re.exec(string))) break;
+			out.push(string.slice(start, result.index));
+			start = re.lastIndex;
+		}
+		out.push(string.slice(start));
+		return List.fromArray(out);
+	}
+
+	return Elm.Native.Regex.values = {
+		regex: regex,
+		caseInsensitive: caseInsensitive,
+		escape: escape,
+
+		contains: F2(contains),
+		find: F3(find),
+		replace: F4(replace),
+		split: F3(split)
+	};
+};
+
 Elm.Random = Elm.Random || {};
 Elm.Random.make = function (_elm) {
    "use strict";
@@ -9520,6 +9371,40 @@ Elm.Random.make = function (_elm) {
                                ,maxInt: maxInt
                                ,generate: generate
                                ,initialSeed: initialSeed};
+};
+Elm.Regex = Elm.Regex || {};
+Elm.Regex.make = function (_elm) {
+   "use strict";
+   _elm.Regex = _elm.Regex || {};
+   if (_elm.Regex.values) return _elm.Regex.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Native$Regex = Elm.Native.Regex.make(_elm);
+   var _op = {};
+   var split = $Native$Regex.split;
+   var replace = $Native$Regex.replace;
+   var find = $Native$Regex.find;
+   var AtMost = function (a) {    return {ctor: "AtMost",_0: a};};
+   var All = {ctor: "All"};
+   var Match = F4(function (a,b,c,d) {
+      return {match: a,submatches: b,index: c,number: d};
+   });
+   var contains = $Native$Regex.contains;
+   var caseInsensitive = $Native$Regex.caseInsensitive;
+   var regex = $Native$Regex.regex;
+   var escape = $Native$Regex.escape;
+   var Regex = {ctor: "Regex"};
+   return _elm.Regex.values = {_op: _op
+                              ,regex: regex
+                              ,escape: escape
+                              ,caseInsensitive: caseInsensitive
+                              ,contains: contains
+                              ,find: find
+                              ,replace: replace
+                              ,split: split
+                              ,Match: Match
+                              ,All: All
+                              ,AtMost: AtMost};
 };
 Elm.WallpaperGroup = Elm.WallpaperGroup || {};
 Elm.WallpaperGroup.Group = Elm.WallpaperGroup.Group || {};
@@ -10054,7 +9939,7 @@ Elm.WallpaperGroup.Geom.Translate.make = function (_elm) {
    var w2h2 = A2(translate,2,2);
    var translateShifted = F5(function (fH,width,height,columns,i) {
       var offsetX = _U.eq(A2($Basics._op["%"],i / columns | 0,2),
-      0) ? width / 2 : 0;
+      0) ? 0 : width / 2;
       return {x: offsetX + A3(w,width,i,columns)
              ,y: fH * A3(h,height,i,columns)};
    });
@@ -10126,7 +10011,7 @@ Elm.WallpaperGroup.Settings.make = function (_elm) {
            return {steps: _U.list([A2($WallpaperGroup$Geom$Mirror.mirrorVertical,
                   _p6,
                   _p5)])
-                  ,translate: A2($WallpaperGroup$Geom$Translate.w1h2,_p6,_p5)
+                  ,translate: A2($WallpaperGroup$Geom$Translate.w2h1,_p6,_p5)
                   ,tileCoordinates: A2($WallpaperGroup$Geom$Util.rectCoords,
                   _p6,
                   _p5)};
@@ -10268,14 +10153,10 @@ Elm.WallpaperGroup.Settings.make = function (_elm) {
                   {x: _p27,y: h})};
          default: var _p28 = _p0._0;
            var h = $Basics.sqrt(3) / 2 * _p28;
-           return {steps: _U.list([$WallpaperGroup$Geom$Rotate.rotate180(A3($WallpaperGroup$Geom$Util.split,
-                                  {x: _p28 / 2,y: 0},
-                                  {x: _p28,y: h},
-                                  0.5))
-                                  ,$WallpaperGroup$Geom$Rotate.rotate180(A3($WallpaperGroup$Geom$Util.split,
-                                  {x: _p28 / 2,y: 0},
-                                  {x: _p28,y: h},
-                                  0.5))
+           return {steps: _U.list([$WallpaperGroup$Geom$Rotate.rotate120({x: _p28 / 2
+                                                                         ,y: 2 * h / 3})
+                                  ,$WallpaperGroup$Geom$Rotate.rotate120({x: _p28 / 2
+                                                                         ,y: 2 * h / 3})
                                   ,linesToTile
                                   ,$WallpaperGroup$Geom$Rotate.rotate180(A3($WallpaperGroup$Geom$Util.split,
                                   {x: _p28 / 2,y: 0},
@@ -10385,8 +10266,8 @@ Elm.Editor.Model.make = function (_elm) {
                              ,groupType: "P1"
                              ,rasterSize: 4
                              ,boundingBox: $WallpaperGroup$Pattern.bounding(A2($WallpaperGroup$Group.P1,
-                             20,
-                             20))
+                             100,
+                             100))
                              ,tile: _U.list([])
                              ,group: A2($WallpaperGroup$Group.P1,40,40)
                              ,previewGroup: A2($WallpaperGroup$Group.P1,100,100)};
@@ -10526,6 +10407,35 @@ Elm.Editor.Util.Geom.make = function (_elm) {
                                          ,lineIsNearPoint: lineIsNearPoint};
 };
 Elm.Editor = Elm.Editor || {};
+Elm.Editor.Util = Elm.Editor.Util || {};
+Elm.Editor.Util.TileSize = Elm.Editor.Util.TileSize || {};
+Elm.Editor.Util.TileSize.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Util = _elm.Editor.Util || {};
+   _elm.Editor.Util.TileSize = _elm.Editor.Util.TileSize || {};
+   if (_elm.Editor.Util.TileSize.values)
+   return _elm.Editor.Util.TileSize.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Regex = Elm.Regex.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var getTileSize = function (groupType) {
+      return A2($Regex.contains,
+      $Regex.regex("(P6)|(P31m)"),
+      groupType) ? 133 : A2($Regex.contains,
+      $Regex.regex("P3"),
+      groupType) ? 115 : 100;
+   };
+   return _elm.Editor.Util.TileSize.values = {_op: _op
+                                             ,getTileSize: getTileSize};
+};
+Elm.Editor = Elm.Editor || {};
 Elm.Editor.Action = Elm.Editor.Action || {};
 Elm.Editor.Action.make = function (_elm) {
    "use strict";
@@ -10540,6 +10450,7 @@ Elm.Editor.Action.make = function (_elm) {
    $Editor$Types = Elm.Editor.Types.make(_elm),
    $Editor$Util$Geom = Elm.Editor.Util.Geom.make(_elm),
    $Editor$Util$Raster = Elm.Editor.Util.Raster.make(_elm),
+   $Editor$Util$TileSize = Elm.Editor.Util.TileSize.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Random = Elm.Random.make(_elm),
@@ -10660,26 +10571,29 @@ Elm.Editor.Action.make = function (_elm) {
            return _U.update(model,
            {patternState: _U.update(patternState,{columns: _p3._0})});
          case "Group": var _p4 = _p3._0;
-           var boundingBox = $WallpaperGroup$Pattern.bounding(A3(getGroup,
+           var previewGroupSize = $Editor$Util$TileSize.getTileSize(_p4);
+           var previewGroup = A3(getGroup,
            _p4,
-           100,
-           100));
+           previewGroupSize,
+           previewGroupSize);
+           var boundingBox = $WallpaperGroup$Pattern.bounding(previewGroup);
            var model = addHistory(model);
            return _U.update(model,
            {patternState: _U.update(patternState,
            {group: A3(getGroup,_p4,patternState.height,patternState.width)
-           ,previewGroup: A3(getGroup,_p4,100,100)
+           ,previewGroup: previewGroup
            ,groupType: _p4
-           ,boundingBox: $WallpaperGroup$Pattern.bounding(A3(getGroup,
-           _p4,
-           patternState.height,
-           patternState.width))})
+           ,boundingBox: boundingBox})
            ,drawingState: _U.update(drawingState,
            {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
            patternState.rasterSize,
-           $WallpaperGroup$Pattern.bounding(A3(getGroup,_p4,100,100)))})});
+           $WallpaperGroup$Pattern.bounding(A3(getGroup,
+           _p4,
+           previewGroupSize,
+           previewGroupSize)))})});
          case "RasterSize": var _p5 = _p3._0;
            var model = addHistory(model);
+           var previewGroupSize = $Editor$Util$TileSize.getTileSize(model.patternState.groupType);
            return _U.update(model,
            {patternState: _U.update(patternState,
            {rasterSize: _p5,tile: _U.list([])})
@@ -10688,8 +10602,8 @@ Elm.Editor.Action.make = function (_elm) {
            _p5,
            $WallpaperGroup$Pattern.bounding(A3(getGroup,
            patternState.groupType,
-           100,
-           100)))})});
+           previewGroupSize,
+           previewGroupSize)))})});
          case "LineStart": var _p6 = _p3._0;
            return _U.update(model,
            {drawingState: _U.update(drawingState,
@@ -14144,6 +14058,7 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $Svg = Elm.Svg.make(_elm),
    $Svg$Attributes = Elm.Svg.Attributes.make(_elm),
+   $WallpaperGroup$Geom$BoundingBox = Elm.WallpaperGroup.Geom.BoundingBox.make(_elm),
    $WallpaperGroup$Group = Elm.WallpaperGroup.Group.make(_elm);
    var _op = {};
    var sendMousePositionOrDelete = F2(function (sendAction,
@@ -14180,6 +14095,30 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
    A2($Json$Decode._op[":="],"offsetX",$Json$Decode.$float),
    A2($Json$Decode._op[":="],"offsetY",$Json$Decode.$float),
    A2($Json$Decode._op[":="],"altKey",$Json$Decode.bool));
+   var bounding = function (boundingBox) {
+      var _p0 = boundingBox;
+      if (_p0.ctor === "Rect") {
+            var _p4 = _p0._3;
+            var _p3 = _p0._2;
+            var _p2 = _p0._1;
+            var _p1 = _p0._0;
+            return A2($Svg.g,
+            _U.list([$Svg$Attributes.stroke("grey")]),
+            _U.list([$Editor$Util$Svg.renderLine(_U.list([_p1,_p2]))
+                    ,$Editor$Util$Svg.renderLine(_U.list([_p2,_p3]))
+                    ,$Editor$Util$Svg.renderLine(_U.list([_p3,_p4]))
+                    ,$Editor$Util$Svg.renderLine(_U.list([_p4,_p1]))]));
+         } else {
+            var _p7 = _p0._2;
+            var _p6 = _p0._1;
+            var _p5 = _p0._0;
+            return A2($Svg.g,
+            _U.list([$Svg$Attributes.stroke("grey")]),
+            _U.list([$Editor$Util$Svg.renderLine(_U.list([_p5,_p6]))
+                    ,$Editor$Util$Svg.renderLine(_U.list([_p6,_p7]))
+                    ,$Editor$Util$Svg.renderLine(_U.list([_p7,_p5]))]));
+         }
+   };
    var renderPoint = function (p) {
       return A2($Svg.circle,
       _U.list([$Svg$Attributes.cx($Basics.toString(p.x))
@@ -14187,7 +14126,11 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
               ,$Svg$Attributes.r("1")]),
       _U.list([]));
    };
-   var raster = F4(function (model,tile,group,address) {
+   var raster = F5(function (model,
+   tile,
+   group,
+   boundingBox,
+   address) {
       var sendAction = sendTo(address);
       return A2($Html.div,
       _U.list([A3($Html$Events.on,
@@ -14212,12 +14155,12 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
               _U.list([]),
               A2($List.map,renderPoint,model.rasterCoords))
               ,preview(model)
-              ,A2($Svg.g,
-              _U.list([$Svg$Attributes.stroke("red")]),
-              _U.list([$Editor$Util$Svg.renderTile(tile)]))]))]));
+              ,$Editor$Util$Svg.renderTile(tile)
+              ,bounding(boundingBox)]))]));
    });
    return _elm.Editor.Ui.Raster.values = {_op: _op
                                          ,renderPoint: renderPoint
+                                         ,bounding: bounding
                                          ,mousePosition: mousePosition
                                          ,sendTo: sendTo
                                          ,preview: preview
@@ -14282,6 +14225,7 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
    $Editor$Model = Elm.Editor.Model.make(_elm),
    $Editor$Types = Elm.Editor.Types.make(_elm),
    $Editor$Util$Svg = Elm.Editor.Util.Svg.make(_elm),
+   $Editor$Util$TileSize = Elm.Editor.Util.TileSize.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
@@ -14291,7 +14235,9 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
    var _op = {};
    var scalePoint = F2(function (_p0,p) {
       var _p1 = _p0;
-      return {x: p.x / 100 * _p1.width,y: p.y / 100 * _p1.height};
+      var _p2 = _p1.groupType;
+      return {x: p.x / $Editor$Util$TileSize.getTileSize(_p2) * _p1.width
+             ,y: p.y / $Editor$Util$TileSize.getTileSize(_p2) * _p1.height};
    });
    var stage = function (model) {
       var tile = A2($List.map,
@@ -14337,6 +14283,8 @@ Elm.Editor.View.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
    var view = F2(function (address,model) {
+      var redoDisabled = _U.eq($List.length(model.redoStack),0);
+      var undoDisabled = _U.eq($List.length(model.undoStack),0);
       var drawingState = model.drawingState;
       var patternState = model.patternState;
       return A2($Html.div,
@@ -14368,10 +14316,11 @@ Elm.Editor.View.make = function (_elm) {
                       ,A2($Editor$Ui$GroupSelect.groupSelect,
                       patternState.groupType,
                       address)
-                      ,A4($Editor$Ui$Raster.raster,
+                      ,A5($Editor$Ui$Raster.raster,
                       drawingState,
                       patternState.tile,
                       patternState.previewGroup,
+                      patternState.boundingBox,
                       address)
                       ,A2($Html.button,
                       _U.list([A3($Html$Events.on,
@@ -14391,19 +14340,21 @@ Elm.Editor.View.make = function (_elm) {
                       _U.list([$Html.text("Random")]))
                       ,A2($Html.button,
                       _U.list([A3($Html$Events.on,
-                      "click",
-                      $Html$Events.targetValue,
-                      function (_p2) {
-                         return A2($Signal.message,address,$Editor$Action.Undo);
-                      })]),
+                              "click",
+                              $Html$Events.targetValue,
+                              function (_p2) {
+                                 return A2($Signal.message,address,$Editor$Action.Undo);
+                              })
+                              ,$Html$Attributes.disabled(undoDisabled)]),
                       _U.list([$Html.text("Undo")]))
                       ,A2($Html.button,
                       _U.list([A3($Html$Events.on,
-                      "click",
-                      $Html$Events.targetValue,
-                      function (_p3) {
-                         return A2($Signal.message,address,$Editor$Action.Redo);
-                      })]),
+                              "click",
+                              $Html$Events.targetValue,
+                              function (_p3) {
+                                 return A2($Signal.message,address,$Editor$Action.Redo);
+                              })
+                              ,$Html$Attributes.disabled(redoDisabled)]),
                       _U.list([$Html.text("Redo")]))]))
               ,A2($Html.div,
               _U.list([$Html$Attributes.$class("main lalasd")]),

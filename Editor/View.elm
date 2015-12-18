@@ -20,6 +20,8 @@ view address model =
   let
     patternState = model.patternState
     drawingState = model.drawingState
+    undoDisabled = List.length (model.undoStack) == 0
+    redoDisabled = List.length (model.redoStack) == 0
   in
     div
       [Attr.class "row", Attr.id "String"
@@ -45,7 +47,7 @@ view address model =
                    , createAction= \str -> Rows(Convert.toInt str)
                    }
           , groupSelect patternState.groupType address
-          , raster drawingState patternState.tile patternState.previewGroup address
+          , raster drawingState patternState.tile patternState.previewGroup patternState.boundingBox address
           , button
               [ on "click" targetValue (\_ -> Signal.message address ClearTiles)
               ]
@@ -58,11 +60,13 @@ view address model =
               ]
           , button
               [ on "click" targetValue (\_ -> Signal.message address Undo)
+              , Attr.disabled undoDisabled
               ]
               [Html.text "Undo"
               ]
           , button
               [ on "click" targetValue (\_ -> Signal.message address Redo)
+              , Attr.disabled redoDisabled
               ]
               [Html.text "Redo"
               ]

@@ -3,13 +3,13 @@ module Editor.Action where
 import Editor.Model exposing (..)
 import Editor.Types exposing (..)
 import Editor.Util.Geom exposing (..)
+import Editor.Util.TileSize exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
 import WallpaperGroup.Group exposing(..)
 import WallpaperGroup.Pattern as Pattern
 import Random
 import Array
-import Date
-import Debug exposing (log)
+
 
 type Action
   = Columns Int
@@ -107,6 +107,7 @@ getRandomCoord points seed i =
       |> getValue
     ]
 
+
 addHistory : Model -> Model
 addHistory model =
   let
@@ -183,25 +184,28 @@ update action model =
       Group value ->
         let
           model = addHistory model
-          boundingBox  = Pattern.bounding (getGroup value 100 100)
+          previewGroupSize = getTileSize value
+          previewGroup = getGroup value previewGroupSize previewGroupSize
+          boundingBox  = Pattern.bounding (previewGroup)
         in
           { model |
             patternState =
               { patternState |
                 group = getGroup value patternState.height patternState.width
-              , previewGroup = getGroup value 100 100
+              , previewGroup = previewGroup
               , groupType = value
-              , boundingBox = Pattern.bounding (getGroup value patternState.height patternState.width)
+              , boundingBox = boundingBox
               },
             drawingState =
               {drawingState |
-                  rasterCoords = rasterCoords patternState.rasterSize (Pattern.bounding (getGroup value 100 100))
+                  rasterCoords = rasterCoords patternState.rasterSize (Pattern.bounding (getGroup value previewGroupSize previewGroupSize))
               }
           }
 
       RasterSize value ->
         let
           model = addHistory model
+          previewGroupSize = getTileSize model.patternState.groupType
         in
           {model | patternState =
             { patternState |
@@ -210,7 +214,7 @@ update action model =
             },
             drawingState = {
                drawingState |
-                 rasterCoords = rasterCoords value (Pattern.bounding (getGroup patternState.groupType 100 100))
+                 rasterCoords = rasterCoords value (Pattern.bounding (getGroup patternState.groupType previewGroupSize previewGroupSize))
              }
            }
 

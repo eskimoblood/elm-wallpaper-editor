@@ -12,7 +12,7 @@ import Editor.Types exposing (..)
 import Editor.Action exposing (..)
 import Editor.Model exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
-import Editor.Util.Svg exposing (renderTiles, renderTile)
+import Editor.Util.Svg exposing (renderTiles, renderTile, renderLine)
 import Debug exposing (log)
 import WallpaperGroup.Geom.BoundingBox exposing (..)
 import WallpaperGroup.Group exposing (..)
@@ -25,6 +25,24 @@ renderPoint p =
     ]
     []
 
+bounding : BoundingBox -> Svg
+bounding boundingBox =
+  case boundingBox of
+    Rect p1 p2 p3 p4 ->
+      g
+      [stroke "grey"]
+      [ renderLine [p1, p2]
+      , renderLine [p2, p3]
+      , renderLine [p3, p4]
+      , renderLine [p4, p1]
+      ]
+    Triangle p1 p2 p3 ->
+      g
+      [stroke "grey"]
+      [ renderLine [p1, p2]
+      , renderLine [p2, p3]
+      , renderLine [p3, p1]
+      ]
 
 
 mousePosition : Decoder (Point, Bool)
@@ -73,8 +91,8 @@ sendMousePositionOrDelete sendAction  mouseData =
     else
       sendAction LineStart (fst mouseData)
 
-raster : DrawingState -> Tile -> Group -> Signal.Address Action -> Html
-raster model tile group address=
+raster : DrawingState -> Tile -> Group -> BoundingBox -> Signal.Address Action -> Html
+raster model tile group boundingBox address=
   let
     sendAction = sendTo address
   in
@@ -90,6 +108,7 @@ raster model tile group address=
         [ (renderTiles group 1 1 tile)
         , Svg.g [](List.map renderPoint model.rasterCoords)
         , preview model
-        , Svg.g [stroke "red"] [(renderTile tile)]
+        , renderTile tile
+        , bounding boundingBox
         ]
       ]

@@ -43,10 +43,10 @@ initialPatternState =
   , height = 40
   , groupType = "P1"
   , rasterSize = 4
-  , boundingBox = Pattern.bounding (P1 100 100)
+  , boundingBox = Pattern.bounding (P1 150 150)
   , tile = []
   , group = P1 40 40
-  , previewGroup = P1 100 100
+  , previewGroup = P1 150 150
   }
 
 initialDrawingState : DrawingState
@@ -54,7 +54,7 @@ initialDrawingState =
   { lineStart = {x=0, y=0}
   , lineEnd = {x=0, y=0}
   , isDrawing = False
-  , rasterCoords = rasterCoords 4 (Pattern.bounding (P1 100 100))
+  , rasterCoords = rasterCoords 4 (Pattern.bounding (P1 150 150))
   }
 
 initialModel : Model

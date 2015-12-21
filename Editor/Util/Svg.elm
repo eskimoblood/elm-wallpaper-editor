@@ -6,7 +6,7 @@ import WallpaperGroup.Group exposing (..)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Editor.Types exposing (Point, MultiLine, Tile)
-
+import String as String
 
 lineToAttribute : Point -> List Svg.Attribute -> List Svg.Attribute
 lineToAttribute {x, y} attributes =
@@ -15,6 +15,30 @@ lineToAttribute {x, y} attributes =
   else
     List.append [x2 (toString x), y2 (toString y)] attributes
 
+
+pointToString : Point -> String
+pointToString p =
+  (toString p.x) ++ " " ++ (toString p.y)
+
+renderPath : MultiLine -> Svg
+renderPath multiLine =
+  let
+    path = "M " ++ (List.map pointToString multiLine |> String.join (" L ")) ++ "z"
+
+  in
+   Svg.path
+      [ d path
+      , class "tile"
+      ]
+      []
+
+
+renderPaths : Group -> Int -> Int -> Tile -> Svg
+renderPaths  group columns rows tile =
+  Svg.g
+    []
+  (  List.map (\t -> List.map renderPath t) (Pattern.pattern group columns rows tile)
+    |> List.concat)
 
 renderLine : MultiLine -> Svg
 renderLine line =

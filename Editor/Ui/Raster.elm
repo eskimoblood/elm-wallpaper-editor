@@ -12,7 +12,7 @@ import Editor.Types exposing (..)
 import Editor.Action exposing (..)
 import Editor.Model exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
-import Editor.Util.Svg exposing (renderTiles, renderTile, renderLine)
+import Editor.Util.Svg exposing (renderTiles, renderTile, renderLine, renderPaths)
 import Debug exposing (log)
 import WallpaperGroup.Geom.BoundingBox exposing (..)
 import WallpaperGroup.Group exposing (..)
@@ -21,7 +21,7 @@ renderPoint : Point -> Svg
 renderPoint p =
   Svg.circle
     [ cx (toString p.x)
-    , cy (toString p.y), r "1"
+    , cy (toString p.y), r ".5"
     ]
     []
 
@@ -30,7 +30,7 @@ bounding boundingBox =
   case boundingBox of
     Rect p1 p2 p3 p4 ->
       g
-      [stroke "grey"]
+      [class "single-tile"]
       [ renderLine [p1, p2]
       , renderLine [p2, p3]
       , renderLine [p3, p4]
@@ -38,12 +38,19 @@ bounding boundingBox =
       ]
     Triangle p1 p2 p3 ->
       g
-      [stroke "grey"]
+      [class "single-tile"]
       [ renderLine [p1, p2]
       , renderLine [p2, p3]
       , renderLine [p3, p1]
       ]
 
+boundingBoxAsPath : BoundingBox -> Tile
+boundingBoxAsPath boundingBox =
+  case boundingBox of
+    Rect p1 p2 p3 p4 ->
+      [[p1,p2, p3, p4]]
+    Triangle p1 p2 p3 ->
+      [[p1,p2, p3]]
 
 mousePosition : Decoder (Point, Bool)
 mousePosition =
@@ -104,8 +111,10 @@ raster model tile group boundingBox address=
     ]
     [ Svg.svg
         [ version "1.1", x "0", y "0"
+        , class "preview"
         ]
-        [ (renderTiles group 1 1 tile)
+        [ renderPaths  group 1 1 (boundingBoxAsPath boundingBox)
+        , renderTiles group 1 1 tile
         , Svg.g [](List.map renderPoint model.rasterCoords)
         , preview model
         , renderTile tile

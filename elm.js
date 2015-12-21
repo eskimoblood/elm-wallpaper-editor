@@ -10257,8 +10257,8 @@ Elm.Editor.Model.make = function (_elm) {
                              ,rasterCoords: A2($Editor$Util$Raster.rasterCoords,
                              4,
                              $WallpaperGroup$Pattern.bounding(A2($WallpaperGroup$Group.P1,
-                             100,
-                             100)))};
+                             150,
+                             150)))};
    var initialPatternState = {columns: 10
                              ,rows: 10
                              ,width: 40
@@ -10266,11 +10266,11 @@ Elm.Editor.Model.make = function (_elm) {
                              ,groupType: "P1"
                              ,rasterSize: 4
                              ,boundingBox: $WallpaperGroup$Pattern.bounding(A2($WallpaperGroup$Group.P1,
-                             100,
-                             100))
+                             150,
+                             150))
                              ,tile: _U.list([])
                              ,group: A2($WallpaperGroup$Group.P1,40,40)
-                             ,previewGroup: A2($WallpaperGroup$Group.P1,100,100)};
+                             ,previewGroup: A2($WallpaperGroup$Group.P1,150,150)};
    var initialModel = {patternState: initialPatternState
                       ,drawingState: initialDrawingState
                       ,seed: 0
@@ -10428,9 +10428,9 @@ Elm.Editor.Util.TileSize.make = function (_elm) {
    var getTileSize = function (groupType) {
       return A2($Regex.contains,
       $Regex.regex("(P6)|(P31m)"),
-      groupType) ? 133 : A2($Regex.contains,
+      groupType) ? 200 : A2($Regex.contains,
       $Regex.regex("P3"),
-      groupType) ? 115 : 100;
+      groupType) ? 172 : 150;
    };
    return _elm.Editor.Util.TileSize.values = {_op: _op
                                              ,getTileSize: getTileSize};
@@ -13991,11 +13991,37 @@ Elm.Editor.Util.Svg.make = function (_elm) {
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
+   $String = Elm.String.make(_elm),
    $Svg = Elm.Svg.make(_elm),
    $Svg$Attributes = Elm.Svg.Attributes.make(_elm),
    $WallpaperGroup$Group = Elm.WallpaperGroup.Group.make(_elm),
    $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
    var _op = {};
+   var pointToString = function (p) {
+      return A2($Basics._op["++"],
+      $Basics.toString(p.x),
+      A2($Basics._op["++"]," ",$Basics.toString(p.y)));
+   };
+   var renderPath = function (multiLine) {
+      var path = A2($Basics._op["++"],
+      "M ",
+      A2($Basics._op["++"],
+      A2($String.join," L ",A2($List.map,pointToString,multiLine)),
+      "z"));
+      return A2($Svg.path,
+      _U.list([$Svg$Attributes.d(path)
+              ,$Svg$Attributes.$class("tile")]),
+      _U.list([]));
+   };
+   var renderPaths = F4(function (group,columns,rows,tile) {
+      return A2($Svg.g,
+      _U.list([]),
+      $List.concat(A2($List.map,
+      function (t) {
+         return A2($List.map,renderPath,t);
+      },
+      A4($WallpaperGroup$Pattern.pattern,group,columns,rows,tile))));
+   });
    var lineToAttribute = F2(function (_p0,attributes) {
       var _p1 = _p0;
       var _p3 = _p1.y;
@@ -14027,6 +14053,9 @@ Elm.Editor.Util.Svg.make = function (_elm) {
    });
    return _elm.Editor.Util.Svg.values = {_op: _op
                                         ,lineToAttribute: lineToAttribute
+                                        ,pointToString: pointToString
+                                        ,renderPath: renderPath
+                                        ,renderPaths: renderPaths
                                         ,renderLine: renderLine
                                         ,renderTile: renderTile
                                         ,renderTiles: renderTiles};
@@ -14095,35 +14124,43 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
    A2($Json$Decode._op[":="],"offsetX",$Json$Decode.$float),
    A2($Json$Decode._op[":="],"offsetY",$Json$Decode.$float),
    A2($Json$Decode._op[":="],"altKey",$Json$Decode.bool));
-   var bounding = function (boundingBox) {
+   var boundingBoxAsPath = function (boundingBox) {
       var _p0 = boundingBox;
       if (_p0.ctor === "Rect") {
-            var _p4 = _p0._3;
-            var _p3 = _p0._2;
-            var _p2 = _p0._1;
-            var _p1 = _p0._0;
-            return A2($Svg.g,
-            _U.list([$Svg$Attributes.stroke("grey")]),
-            _U.list([$Editor$Util$Svg.renderLine(_U.list([_p1,_p2]))
-                    ,$Editor$Util$Svg.renderLine(_U.list([_p2,_p3]))
-                    ,$Editor$Util$Svg.renderLine(_U.list([_p3,_p4]))
-                    ,$Editor$Util$Svg.renderLine(_U.list([_p4,_p1]))]));
+            return _U.list([_U.list([_p0._0,_p0._1,_p0._2,_p0._3])]);
          } else {
-            var _p7 = _p0._2;
-            var _p6 = _p0._1;
-            var _p5 = _p0._0;
+            return _U.list([_U.list([_p0._0,_p0._1,_p0._2])]);
+         }
+   };
+   var bounding = function (boundingBox) {
+      var _p1 = boundingBox;
+      if (_p1.ctor === "Rect") {
+            var _p5 = _p1._3;
+            var _p4 = _p1._2;
+            var _p3 = _p1._1;
+            var _p2 = _p1._0;
             return A2($Svg.g,
-            _U.list([$Svg$Attributes.stroke("grey")]),
-            _U.list([$Editor$Util$Svg.renderLine(_U.list([_p5,_p6]))
-                    ,$Editor$Util$Svg.renderLine(_U.list([_p6,_p7]))
-                    ,$Editor$Util$Svg.renderLine(_U.list([_p7,_p5]))]));
+            _U.list([$Svg$Attributes.$class("single-tile")]),
+            _U.list([$Editor$Util$Svg.renderLine(_U.list([_p2,_p3]))
+                    ,$Editor$Util$Svg.renderLine(_U.list([_p3,_p4]))
+                    ,$Editor$Util$Svg.renderLine(_U.list([_p4,_p5]))
+                    ,$Editor$Util$Svg.renderLine(_U.list([_p5,_p2]))]));
+         } else {
+            var _p8 = _p1._2;
+            var _p7 = _p1._1;
+            var _p6 = _p1._0;
+            return A2($Svg.g,
+            _U.list([$Svg$Attributes.$class("single-tile")]),
+            _U.list([$Editor$Util$Svg.renderLine(_U.list([_p6,_p7]))
+                    ,$Editor$Util$Svg.renderLine(_U.list([_p7,_p8]))
+                    ,$Editor$Util$Svg.renderLine(_U.list([_p8,_p6]))]));
          }
    };
    var renderPoint = function (p) {
       return A2($Svg.circle,
       _U.list([$Svg$Attributes.cx($Basics.toString(p.x))
               ,$Svg$Attributes.cy($Basics.toString(p.y))
-              ,$Svg$Attributes.r("1")]),
+              ,$Svg$Attributes.r(".5")]),
       _U.list([]));
    };
    var raster = F5(function (model,
@@ -14149,8 +14186,14 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
       _U.list([A2($Svg.svg,
       _U.list([$Svg$Attributes.version("1.1")
               ,$Svg$Attributes.x("0")
-              ,$Svg$Attributes.y("0")]),
-      _U.list([A4($Editor$Util$Svg.renderTiles,group,1,1,tile)
+              ,$Svg$Attributes.y("0")
+              ,$Svg$Attributes.$class("preview")]),
+      _U.list([A4($Editor$Util$Svg.renderPaths,
+              group,
+              1,
+              1,
+              boundingBoxAsPath(boundingBox))
+              ,A4($Editor$Util$Svg.renderTiles,group,1,1,tile)
               ,A2($Svg.g,
               _U.list([]),
               A2($List.map,renderPoint,model.rasterCoords))
@@ -14161,6 +14204,7 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
    return _elm.Editor.Ui.Raster.values = {_op: _op
                                          ,renderPoint: renderPoint
                                          ,bounding: bounding
+                                         ,boundingBoxAsPath: boundingBoxAsPath
                                          ,mousePosition: mousePosition
                                          ,sendTo: sendTo
                                          ,preview: preview

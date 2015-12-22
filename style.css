@@ -101,7 +101,7 @@
   }
   input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    background: radial-gradient(ellipse at center, #7c7c7c 1%, #7c7c7c 10%, #e5e5e5 20%, #e5e5e5 100%);
+    background: radial-gradient(ellipse at center, #fff 1%, #fff 55%, #77ABFB 66%, #77ABFB 100%);
     width: 15px;
     height: 15px;
     border-radius: 50%;

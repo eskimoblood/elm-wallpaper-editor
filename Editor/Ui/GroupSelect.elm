@@ -24,7 +24,7 @@ groupTypes =
   , "P3m1"
   , "P31m"
   , "P6"
-  ]
+  ] 
 
 
 createOption : String -> String -> Html

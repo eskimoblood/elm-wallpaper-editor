@@ -90,13 +90,10 @@ sendMousePosition sendAction action mouseData =
 
 sendMousePositionOrDelete : ((Point -> Action) -> Point -> Signal.Message)  -> (Point, Bool) -> Signal.Message
 sendMousePositionOrDelete sendAction  mouseData =
-  let
-    mouseData = log "m" mouseData
-  in
-    if (snd mouseData) then
-      sendAction DeleteLine (fst mouseData)
-    else
-      sendAction LineStart (fst mouseData)
+  if (snd mouseData) then
+    sendAction DeleteLine (fst mouseData)
+  else
+    sendAction LineStart (fst mouseData)
 
 raster : DrawingState -> Tile -> Group -> BoundingBox -> Signal.Address Action -> Html
 raster model tile group boundingBox address=

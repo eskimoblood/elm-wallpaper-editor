@@ -14,6 +14,7 @@ scalePoint {width, height, groupType} p =
   , y= p.y / (getTileSize groupType) * height
   }
 
+  
 stage : PatternState -> Svg
 stage  model =
   let

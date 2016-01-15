@@ -27,9 +27,17 @@ type alias DrawingState =
   , rasterCoords: List Point
   }
 
+type alias ColorState =
+  { colorSearch : String
+  , palettes : List (List String)
+  , selectedPalette :  List String
+  , loading : Bool
+  }
+
 type alias Model =
   { patternState : PatternState
   , drawingState : DrawingState
+  , colorState : ColorState
   , undoStack: List PatternState
   , redoStack: List PatternState
   , seed: Int
@@ -57,10 +65,19 @@ initialDrawingState =
   , rasterCoords = rasterCoords 4 (Pattern.bounding (P1 150 150))
   }
 
+initialColorState : ColorState
+initialColorState =
+  { colorSearch = ""
+  , palettes = []
+  , selectedPalette = []
+  , loading = True
+  }
+
 initialModel : Model
 initialModel =
   { patternState = initialPatternState
   , drawingState = initialDrawingState
+  , colorState = initialColorState
   , seed = 0
   , undoStack = []
   , redoStack = []

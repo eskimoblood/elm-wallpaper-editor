@@ -11,11 +11,10 @@ import Json.Decode exposing (..)
 import Editor.Types exposing (..)
 import Editor.Action exposing (..)
 import Editor.Model exposing (..)
-import Editor.Util.Raster exposing (rasterCoords)
 import Editor.Util.Svg exposing (renderTiles, renderTile, renderLine, renderPaths)
-import Debug exposing (log)
 import WallpaperGroup.Geom.BoundingBox exposing (..)
 import WallpaperGroup.Group exposing (..)
+
 
 renderPoint : Point -> Svg
 renderPoint p =

@@ -5,6 +5,7 @@ import Editor.Types exposing (..)
 import Editor.Util.Geom exposing (..)
 import Editor.Util.TileSize exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
+import Editor.Util.Noise exposing (noise3d)
 import WallpaperGroup.Group exposing(..)
 import Effects exposing (Effects , none)
 import WallpaperGroup.Pattern as Pattern
@@ -13,6 +14,8 @@ import Array
 import Effects exposing (..)
 import Editor.Signals exposing (requestPalette)
 import Task
+
+import Debug
 
 type Action
   = NoOp
@@ -82,21 +85,19 @@ getGroup groupType height width =
   else
     P1 width height
 
-getRandom : Int -> Int -> Int -> Int
+getRandom : Random.Seed -> Int -> Int -> (Int, Random.Seed)
 getRandom seed min max =
   let
-    initialSeed = Random.initialSeed seed
     generator = Random.int min max
   in
-    fst (Random.generate generator initialSeed)
+    Random.generate generator seed
 
-getRandomCoord : List Point -> Int-> Int -> MultiLine
+getRandomCoord : List Point -> Random.Seed-> Int -> MultiLine
 getRandomCoord points seed i =
   let
-    seed = getRandom (seed + i) Random.minInt Random.maxInt
-    i1 = getRandom (seed + i) 0 (List.length points - 1)
-    seed' = getRandom seed Random.minInt Random.maxInt
-    i2 = getRandom (seed') 0 (List.length points - 1)
+    seed' = Random.initialSeed (i + (fst (getRandom seed Random.minInt Random.maxInt )))
+    (i1, seed'') = getRandom seed' 0 (List.length points - 1)
+    (i2, _) = getRandom seed'' 0 (List.length points - 1)
     getValue item =
     case item of
       Just i
@@ -260,9 +261,12 @@ update action model =
         let
           model = addHistory model
           tile = List.filter (lineIsNearPoint mousePosition 5) patternState.tile
+          (noise, seed) = noise3d (toFloat patternState.columns) (toFloat patternState.rows) (toFloat (List.length tile)) model.seed
+          a = Debug.log "noise" noise
+          b = Debug.log "tile" tile
         in
           ({ model |
-            patternState = {patternState | tile = tile }
+            patternState = {patternState | tile = tile, noise = noise }
           }, Effects.none)
 
       ClearTiles ->
@@ -277,12 +281,13 @@ update action model =
       Random ->
         let
           model = addHistory model
-          i = getRandom model.seed 3 10
-          l = List.map (getRandomCoord drawingState.rasterCoords model.seed) [1..i]
+          (i, seed') = getRandom model.seed 3 10
+          a = Debug.log "i" i
+          l = List.map (getRandomCoord drawingState.rasterCoords seed') [1..i]
         in
           ({model |
             patternState = {patternState | tile = l},
-            seed = getRandom model.seed Random.minInt Random.maxInt
+            seed = seed'
           }, Effects.none)
 
       Undo ->

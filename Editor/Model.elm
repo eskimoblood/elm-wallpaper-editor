@@ -5,7 +5,8 @@ import  WallpaperGroup.Geom.BoundingBox exposing (..)
 import Editor.Types exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
 import WallpaperGroup.Pattern as Pattern
-
+import Editor.Util.Noise exposing (noise3d)
+import Random
 
 type alias PatternState =
   { columns : Int
@@ -18,6 +19,7 @@ type alias PatternState =
   , boundingBox : BoundingBox
   , rasterSize : Float
   , tile : Tile
+  , noise : List Float
   }
 
 type alias DrawingState =
@@ -40,7 +42,7 @@ type alias Model =
   , colorState : ColorState
   , undoStack: List PatternState
   , redoStack: List PatternState
-  , seed: Int
+  , seed: Random.Seed
   }
 
 initialPatternState : PatternState
@@ -55,6 +57,7 @@ initialPatternState =
   , tile = []
   , group = P1 40 40
   , previewGroup = P1 150 150
+  , noise = []
   }
 
 initialDrawingState : DrawingState
@@ -78,7 +81,7 @@ initialModel =
   { patternState = initialPatternState
   , drawingState = initialDrawingState
   , colorState = initialColorState
-  , seed = 0
+  , seed = Random.initialSeed 31415
   , undoStack = []
   , redoStack = []
   }

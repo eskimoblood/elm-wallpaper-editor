@@ -4,7 +4,7 @@ import Array exposing (Array)
 import Random.Array exposing (shuffle)
 import Random
 import Bitwise exposing (and)
-
+import Editor.Model exposing(Model)
 
 f2 : Float
 f2 = 0.5 * ((sqrt 3) - 1)
@@ -90,30 +90,33 @@ getN x y z i j k  perm permMod12 =
       in
         t' * t' * ((get grad3 gi) * x + (get grad3 (gi + 1)) * y + (get grad3 (gi + 2)) * z)
 
-noise3d : Float -> Float -> Float ->  Random.Seed -> (List Float, Random.Seed)
-noise3d maxX maxY maxZ seed =
-  if (maxX == 0 || maxY == 0 || maxZ == 0 ) then
-    ([], seed)
-  else
-    let
-      a = Debug.log "x" maxX
-      b = Debug.log "y" maxY
-      c = Debug.log "z" maxZ
-      (perm, newSeed) = generatePerm seed
-      permMod12 = generatePermMod12 perm
-      list = generate  maxX maxY maxZ perm permMod12
-    in
-     (list, newSeed)
+noise3d : Model -> Int-> (List (List Float), Random.Seed)
+noise3d model z =
+  let
+    maxX = toFloat model.patternState.columns
+    maxY = toFloat model.patternState.rows
+    maxZ = toFloat z
+    seed =  model.seed
+  in
+    if (maxX == 0 || maxY == 0 || maxZ == 0 ) then
+      ([], seed)
+    else
+      let
+        (perm, newSeed) = generatePerm seed
+        permMod12 = generatePermMod12 perm
+        list = generate  maxX maxY maxZ perm permMod12
+      in
+       (list, newSeed)
 
-generate : Float -> Float -> Float -> Array Int -> Array Int -> List Float
+generate : Float -> Float -> Float -> Array Int -> Array Int -> List (List Float)
 generate maxX maxY maxZ perm permMod12 =
   List.foldr (
     \x r -> List.foldr (
-      \y r -> List.foldr (
+      \y r -> (List.foldr (
         \z r -> (calc3d perm permMod12 x y z) :: r
-      ) r [0..maxZ-1]
-    ) r [0..maxY-1]
-  ) [] [0..maxX-1]
+      ) [] [1..maxZ]) :: r
+    ) r [1..maxY]
+  ) [] [1..maxX]
 
 calc3d : Array Int -> Array Int -> Float -> Float -> Float -> Float
 calc3d perm permMod12 xin yin zin =

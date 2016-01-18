@@ -75,6 +75,6 @@ view address model =
       , div
           [ Attr.class "main lalasd"
           ]
-          [stage patternState
+          [stage model
           ]
       ]

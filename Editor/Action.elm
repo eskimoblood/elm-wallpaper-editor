@@ -249,10 +249,15 @@ update action model =
         if drawingState.isDrawing then
           let
             model = addHistory model
+            tile = [drawingState.lineStart, drawingState.lineEnd] :: patternState.tile
+
+            (noise, seed) = noise3d model (List.length tile)
+            e = Debug.log "noise" noise
           in
             ({ model |
               drawingState = { drawingState | isDrawing = False },
-              patternState = { patternState | tile = [drawingState.lineStart, drawingState.lineEnd] :: patternState.tile}
+              patternState = { patternState | tile = tile , noise = noise},
+              seed = seed
             }, Effects.none)
         else
           (model, Effects.none)
@@ -261,12 +266,11 @@ update action model =
         let
           model = addHistory model
           tile = List.filter (lineIsNearPoint mousePosition 5) patternState.tile
-          (noise, seed) = noise3d (toFloat patternState.columns) (toFloat patternState.rows) (toFloat (List.length tile)) model.seed
-          a = Debug.log "noise" noise
-          b = Debug.log "tile" tile
+          (noise, seed) = noise3d model (List.length tile)
         in
           ({ model |
-            patternState = {patternState | tile = tile, noise = noise }
+            patternState = {patternState | tile = tile, noise = noise },
+            seed = seed
           }, Effects.none)
 
       ClearTiles ->
@@ -274,7 +278,7 @@ update action model =
           model = addHistory model
         in
           ({ model |
-            patternState = {patternState | tile = [] }
+            patternState = {patternState | tile = [], noise = [] }
 
           }, Effects.none)
 
@@ -282,11 +286,11 @@ update action model =
         let
           model = addHistory model
           (i, seed') = getRandom model.seed 3 10
-          a = Debug.log "i" i
-          l = List.map (getRandomCoord drawingState.rasterCoords seed') [1..i]
+          tile = List.map (getRandomCoord drawingState.rasterCoords seed') [1..i]
+          (noise, seed) = noise3d model (List.length tile)
         in
           ({model |
-            patternState = {patternState | tile = l},
+            patternState = {patternState | tile = tile, noise = noise},
             seed = seed'
           }, Effects.none)
 

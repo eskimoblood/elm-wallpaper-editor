@@ -5,7 +5,6 @@ import  WallpaperGroup.Geom.BoundingBox exposing (..)
 import Editor.Types exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
 import WallpaperGroup.Pattern as Pattern
-import Editor.Util.Noise exposing (noise3d)
 import Random
 
 type alias PatternState =
@@ -19,7 +18,7 @@ type alias PatternState =
   , boundingBox : BoundingBox
   , rasterSize : Float
   , tile : Tile
-  , noise : List Float
+  , noise : List(List Float)
   }
 
 type alias DrawingState =

@@ -7,12 +7,12 @@ import Html.Events exposing (on, targetValue)
 import Editor.Ui.Slider exposing (slider)
 import Editor.Ui.GroupSelect exposing (groupSelect)
 import Editor.Ui.Raster exposing (raster)
+import Editor.Ui.ColorFinder exposing (colorFinder)
 
 import Editor.Util.Convert as Convert
 import Editor.Ui.PatternStage exposing (stage)
 import Editor.Model exposing (Model)
 import Editor.Action exposing (..)
-import Editor.Types exposing (..)
 
 
 view : Signal.Address Action -> Model -> Html
@@ -70,10 +70,11 @@ view address model =
               ]
               [Html.text "Redo"
               ]
+          , colorFinder address model.colorState
           ]
       , div
           [ Attr.class "main lalasd"
           ]
-          [stage patternState
+          [stage model
           ]
       ]

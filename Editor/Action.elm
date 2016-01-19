@@ -5,14 +5,21 @@ import Editor.Types exposing (..)
 import Editor.Util.Geom exposing (..)
 import Editor.Util.TileSize exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
+import Editor.Util.Noise exposing (noise3d)
 import WallpaperGroup.Group exposing(..)
+import Effects exposing (Effects , none)
 import WallpaperGroup.Pattern as Pattern
 import Random
 import Array
+import Effects exposing (..)
+import Editor.Signals exposing (requestPalette)
+import Task
 
+import Debug
 
 type Action
-  = Columns Int
+  = NoOp
+  | Columns Int
   | Rows Int
   | Group String
   | RasterSize Float
@@ -24,6 +31,9 @@ type Action
   | Random
   | Undo
   | Redo
+  | StartColorSearch String
+  | NewColors (Result String (List (List String)))
+  | SelectPalette (List String)
 
 getGroup : String -> Float -> Float -> Group
 getGroup groupType height width =
@@ -75,21 +85,19 @@ getGroup groupType height width =
   else
     P1 width height
 
-getRandom : Int -> Int -> Int -> Int
+getRandom : Random.Seed -> Int -> Int -> (Int, Random.Seed)
 getRandom seed min max =
   let
-    initialSeed = Random.initialSeed seed
     generator = Random.int min max
   in
-    fst (Random.generate generator initialSeed)
+    Random.generate generator seed
 
-getRandomCoord : List Point -> Int-> Int -> MultiLine
+getRandomCoord : List Point -> Random.Seed-> Int -> MultiLine
 getRandomCoord points seed i =
   let
-    seed = getRandom (seed + i) Random.minInt Random.maxInt
-    i1 = getRandom (seed + i) 0 (List.length points - 1)
-    seed' = getRandom seed Random.minInt Random.maxInt
-    i2 = getRandom (seed') 0 (List.length points - 1)
+    seed' = Random.initialSeed (i + (fst (getRandom seed Random.minInt Random.maxInt )))
+    (i1, seed'') = getRandom seed' 0 (List.length points - 1)
+    (i2, _) = getRandom seed'' 0 (List.length points - 1)
     getValue item =
     case item of
       Just i
@@ -161,25 +169,27 @@ redo model =
         model
 
 
-
-update : Action -> Model -> Model
+update : Action -> Model -> (Model, Effects Action)
 update action model =
   let
       patternState = model.patternState
       drawingState = model.drawingState
+      colorState = model.colorState
   in
     case action of
+      NoOp ->
+        (model, Effects.none)
       Rows value ->
         let
           model = addHistory model
         in
-          {model | patternState = {patternState | rows = value}}
+          ({model | patternState = {patternState | rows = value}}, Effects.none)
 
       Columns value ->
         let
           model = addHistory model
         in
-          {model | patternState = {patternState | columns = value}}
+        (  {model | patternState = {patternState | columns = value}}, Effects.none)
 
       Group value ->
         let
@@ -188,7 +198,7 @@ update action model =
           previewGroup = getGroup value previewGroupSize previewGroupSize
           boundingBox  = Pattern.bounding (previewGroup)
         in
-          { model |
+          ({ model |
             patternState =
               { patternState |
                 group = getGroup value patternState.height patternState.width
@@ -200,14 +210,13 @@ update action model =
               {drawingState |
                   rasterCoords = rasterCoords patternState.rasterSize (Pattern.bounding (getGroup value previewGroupSize previewGroupSize))
               }
-          }
-
+          } , Effects.none)
       RasterSize value ->
         let
           model = addHistory model
           previewGroupSize = getTileSize model.patternState.groupType
         in
-          {model | patternState =
+          ({model | patternState =
             { patternState |
               rasterSize = value
               ,tile = []
@@ -216,68 +225,109 @@ update action model =
                drawingState |
                  rasterCoords = rasterCoords value (Pattern.bounding (getGroup patternState.groupType previewGroupSize previewGroupSize))
              }
-           }
+           }, Effects.none)
 
       LineStart mousePosition ->
-        {model | drawingState =
+        ({model | drawingState =
           {drawingState |
             lineStart = snap drawingState.rasterCoords mousePosition,
             lineEnd = snap drawingState.rasterCoords mousePosition,
             isDrawing = True
           }
-        }
+        }, Effects.none)
 
       LineMove mousePosition ->
         if drawingState.isDrawing then
-          { model |
+          ({ model |
             drawingState = { drawingState |
               lineEnd = snap drawingState.rasterCoords mousePosition }
-          }
+          }, Effects.none)
         else
-          model
+          (model, Effects.none)
 
       LineEnd mousePosition ->
         if drawingState.isDrawing then
           let
             model = addHistory model
+            tile = [drawingState.lineStart, drawingState.lineEnd] :: patternState.tile
+
+            (noise, seed) = noise3d model (List.length tile)
+            e = Debug.log "noise" noise
           in
-            { model |
+            ({ model |
               drawingState = { drawingState | isDrawing = False },
-              patternState = { patternState | tile = [drawingState.lineStart, drawingState.lineEnd] :: patternState.tile}
-            }
+              patternState = { patternState | tile = tile , noise = noise},
+              seed = seed
+            }, Effects.none)
         else
-          model
+          (model, Effects.none)
 
       DeleteLine mousePosition ->
         let
           model = addHistory model
           tile = List.filter (lineIsNearPoint mousePosition 5) patternState.tile
+          (noise, seed) = noise3d model (List.length tile)
         in
-          { model |
-            patternState = {patternState | tile = tile }
-          }
+          ({ model |
+            patternState = {patternState | tile = tile, noise = noise },
+            seed = seed
+          }, Effects.none)
 
       ClearTiles ->
         let
           model = addHistory model
         in
-          { model |
-            patternState = {patternState | tile = [] }
-          }
+          ({ model |
+            patternState = {patternState | tile = [], noise = [] }
+
+          }, Effects.none)
 
       Random ->
         let
           model = addHistory model
-          i = getRandom model.seed 3 10
-          l = List.map (getRandomCoord drawingState.rasterCoords model.seed) [1..i]
+          (i, seed') = getRandom model.seed 3 10
+          tile = List.map (getRandomCoord drawingState.rasterCoords seed') [1..i]
+          (noise, seed) = noise3d model (List.length tile)
         in
-          {model |
-            patternState = {patternState | tile = l},
-            seed = getRandom model.seed Random.minInt Random.maxInt
-          }
+          ({model |
+            patternState = {patternState | tile = tile, noise = noise},
+            seed = seed'
+          }, Effects.none)
 
       Undo ->
-        undo model
+        ((undo model), Effects.none)
 
       Redo ->
-        redo model
+        ((redo model), Effects.none)
+
+      StartColorSearch str ->
+        let
+          model = addHistory model
+          sendTask =
+          Signal.send requestPalette.address str
+            `Task.andThen` (\_ -> Task.succeed NoOp)
+        in
+          ({ model |
+            colorState = { colorState | colorSearch = str, loading = True }
+          }, sendTask |> Effects.task)
+
+      NewColors colors ->
+        case colors of
+          Ok c ->
+              ({ model |
+              colorState = {colorState | palettes = c, loading = False }
+
+          }, Effects.none)
+          Err  e->
+            ({ model |
+              colorState = {colorState | palettes = [], loading = False }
+
+          }, Effects.none)
+
+      SelectPalette palette ->
+        let
+          model = addHistory model
+        in
+          ({ model |
+            colorState = {colorState | selectedPalette = palette }
+          }, Effects.none)

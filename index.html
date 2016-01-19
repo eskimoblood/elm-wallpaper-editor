@@ -5,7 +5,10 @@
   <meta charset="UTF-8">
   <title>Wallpaper Group Editor</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="spinner.css">
   <script type="text/javascript" src="elm.js"></script>
+  <script type="text/javascript" src="node_modules/browser-jsonp/lib/jsonp.min.js">
+  </script>
 </head>
 
 <body>
@@ -14,7 +17,27 @@
   </div>
   <script type="text/javascript">
     var elmDiv = document.getElementById('editor');
-    var elmApp = Elm.embed(Elm.Editor.App, elmDiv);
+    var elmApp = Elm.embed(Elm.Editor.App, elmDiv, {
+      responseColors: []
+    });
+    elmApp.ports.request.subscribe(testPortCallback);
+
+    function testPortCallback(query) {
+
+      JSONP({
+        url: "http://www.colourlovers.com/api/palettes",
+        data: {
+          format: 'json',
+          keywords: query
+        },
+        callbackName: 'jsonCallback',
+        success: function(data) {
+          elmApp.ports.responseColors.send(data);
+
+          console.log(data);
+        }
+      });
+    }
   </script>
 
 </body>

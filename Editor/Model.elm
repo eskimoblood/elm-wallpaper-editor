@@ -5,7 +5,7 @@ import  WallpaperGroup.Geom.BoundingBox exposing (..)
 import Editor.Types exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
 import WallpaperGroup.Pattern as Pattern
-
+import Random
 
 type alias PatternState =
   { columns : Int
@@ -18,6 +18,7 @@ type alias PatternState =
   , boundingBox : BoundingBox
   , rasterSize : Float
   , tile : Tile
+  , noise : List(List Float)
   }
 
 type alias DrawingState =
@@ -27,12 +28,20 @@ type alias DrawingState =
   , rasterCoords: List Point
   }
 
+type alias ColorState =
+  { colorSearch : String
+  , palettes : List (List String)
+  , selectedPalette :  List String
+  , loading : Bool
+  }
+
 type alias Model =
   { patternState : PatternState
   , drawingState : DrawingState
+  , colorState : ColorState
   , undoStack: List PatternState
   , redoStack: List PatternState
-  , seed: Int
+  , seed: Random.Seed
   }
 
 initialPatternState : PatternState
@@ -47,6 +56,7 @@ initialPatternState =
   , tile = []
   , group = P1 40 40
   , previewGroup = P1 150 150
+  , noise = []
   }
 
 initialDrawingState : DrawingState
@@ -57,11 +67,20 @@ initialDrawingState =
   , rasterCoords = rasterCoords 4 (Pattern.bounding (P1 150 150))
   }
 
+initialColorState : ColorState
+initialColorState =
+  { colorSearch = ""
+  , palettes = []
+  , selectedPalette = []
+  , loading = True
+  }
+
 initialModel : Model
 initialModel =
   { patternState = initialPatternState
   , drawingState = initialDrawingState
-  , seed = 0
+  , colorState = initialColorState
+  , seed = Random.initialSeed 31415
   , undoStack = []
   , redoStack = []
   }

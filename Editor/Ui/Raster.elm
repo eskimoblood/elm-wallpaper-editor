@@ -11,11 +11,10 @@ import Json.Decode exposing (..)
 import Editor.Types exposing (..)
 import Editor.Action exposing (..)
 import Editor.Model exposing (..)
-import Editor.Util.Raster exposing (rasterCoords)
 import Editor.Util.Svg exposing (renderTiles, renderTile, renderLine, renderPaths)
-import Debug exposing (log)
 import WallpaperGroup.Geom.BoundingBox exposing (..)
 import WallpaperGroup.Group exposing (..)
+
 
 renderPoint : Point -> Svg
 renderPoint p =
@@ -90,13 +89,10 @@ sendMousePosition sendAction action mouseData =
 
 sendMousePositionOrDelete : ((Point -> Action) -> Point -> Signal.Message)  -> (Point, Bool) -> Signal.Message
 sendMousePositionOrDelete sendAction  mouseData =
-  let
-    mouseData = log "m" mouseData
-  in
-    if (snd mouseData) then
-      sendAction DeleteLine (fst mouseData)
-    else
-      sendAction LineStart (fst mouseData)
+  if (snd mouseData) then
+    sendAction DeleteLine (fst mouseData)
+  else
+    sendAction LineStart (fst mouseData)
 
 raster : DrawingState -> Tile -> Group -> BoundingBox -> Signal.Address Action -> Html
 raster model tile group boundingBox address=

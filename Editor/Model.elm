@@ -10,6 +10,10 @@ import Random
 type alias PatternState =
   { columns : Int
   , rows : Int
+  , noiseX : Int
+  , noiseY : Int
+  , noiseZ : Int
+  , noiseDesctruction : Int
   , width : Float
   , height : Float
   , group : Group
@@ -19,6 +23,7 @@ type alias PatternState =
   , rasterSize : Float
   , tile : Tile
   , noise : List(List Float)
+  , pattern: List (List Bezier)
   }
 
 type alias DrawingState =
@@ -48,6 +53,10 @@ initialPatternState : PatternState
 initialPatternState =
   { columns = 10
   , rows = 10
+  , noiseX = 10
+  , noiseY = 10
+  , noiseZ = 10
+  , noiseDesctruction = 5
   , width = 40
   , height = 40
   , groupType = "P1"
@@ -57,6 +66,7 @@ initialPatternState =
   , group = P1 40 40
   , previewGroup = P1 150 150
   , noise = []
+  , pattern = []
   }
 
 initialDrawingState : DrawingState

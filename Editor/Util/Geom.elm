@@ -18,7 +18,6 @@ findShortest p1 p2 r =
     else
       r
 
-
 snap : List Point -> Point -> Point
 snap points p =
   .p (List.foldl (findShortest p) {d= Random.maxInt |> toFloat, p= p} points)

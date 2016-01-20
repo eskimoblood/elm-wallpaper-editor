@@ -46,6 +46,30 @@ view address model =
                    , address= address
                    , createAction= \str -> Rows(Convert.toInt str)
                    }
+          , slider { value = (toString patternState.noiseX)
+                   , min= "1"
+                   , max= "100"
+                   , address= address
+                   , createAction= \str -> NoiseX(Convert.toInt str)
+                   }
+          , slider { value = (toString patternState.noiseY)
+                   , min= "1"
+                   , max= "100"
+                   , address= address
+                   , createAction= \str -> NoiseY(Convert.toInt str)
+                   }
+          , slider { value = (toString patternState.noiseZ)
+                   , min= "1"
+                   , max= "100"
+                   , address= address
+                   , createAction= \str -> NoiseZ(Convert.toInt str)
+                   }
+          , slider { value = (toString patternState.noiseDesctruction)
+                   , min= "1"
+                   , max= "20"
+                   , address= address
+                   , createAction= \str -> NoiseDesctruction(Convert.toInt str)
+                   }
           , groupSelect patternState.groupType address
           , raster drawingState patternState.tile patternState.previewGroup patternState.boundingBox address
           , button
@@ -75,6 +99,6 @@ view address model =
       , div
           [ Attr.class "main lalasd"
           ]
-          [stage model
+          [stage model.patternState.pattern
           ]
       ]

@@ -20,6 +20,7 @@ toLines lines steps=
   in
     List.map2 line l1 l2
 
+
 calcStep : Point -> Point -> Float -> Point
 calcStep start step i = {x= start.x + step.x * i, y= start.y + step.y * i}
 
@@ -47,7 +48,6 @@ triangleRaster  p1 p2 p3  steps =
   toLines (line p1 p2, line p1 p3) steps
     |> List.map2 splitLine [0..steps]
     |> List.concat
-
 
 
 rasterCoords : Float -> BoundingBox -> List Point

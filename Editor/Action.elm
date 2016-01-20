@@ -5,7 +5,8 @@ import Editor.Types exposing (..)
 import Editor.Util.Geom exposing (..)
 import Editor.Util.TileSize exposing (..)
 import Editor.Util.Raster exposing (rasterCoords)
-import Editor.Util.Noise exposing (noise3d)
+import Editor.Util.Pattern exposing (updatePatternInModel)
+import Editor.Util.History exposing (..)
 import WallpaperGroup.Group exposing(..)
 import Effects exposing (Effects , none)
 import WallpaperGroup.Pattern as Pattern
@@ -15,12 +16,14 @@ import Effects exposing (..)
 import Editor.Signals exposing (requestPalette)
 import Task
 
-import Debug
-
 type Action
   = NoOp
   | Columns Int
   | Rows Int
+  | NoiseX Int
+  | NoiseY Int
+  | NoiseZ Int
+  | NoiseDesctruction Int
   | Group String
   | RasterSize Float
   | LineStart Point
@@ -116,59 +119,6 @@ getRandomCoord points seed i =
     ]
 
 
-addHistory : Model -> Model
-addHistory model =
-  let
-    actualState = model.patternState
-    undoStack = model.undoStack
-  in
-    { model
-    | undoStack = actualState :: undoStack
-    , redoStack = []
-    }
-
-
-undo : Model -> Model
-undo model =
-  let
-    lastState = List.head model.undoStack
-    actualState = model.patternState
-    undoStack = model.undoStack
-    redoStack = model.redoStack
-  in
-    case lastState of
-
-      Just state ->
-        { model
-        | undoStack = Maybe.withDefault [] (List.tail undoStack)
-        , patternState = state
-        , redoStack = actualState :: redoStack
-        }
-
-      Nothing ->
-        model
-
-redo : Model -> Model
-redo model =
-  let
-    undoStack = model.undoStack
-    actualState = model.patternState
-    lastState = List.head model.redoStack
-    newHistory = List.tail model.redoStack |> (Maybe.withDefault [])
-  in
-    case lastState of
-
-      Just state ->
-        { model
-        | redoStack = newHistory
-        , patternState = state
-        , undoStack = actualState :: undoStack
-        }
-
-      Nothing ->
-        model
-
-
 update : Action -> Model -> (Model, Effects Action)
 update action model =
   let
@@ -183,13 +133,37 @@ update action model =
         let
           model = addHistory model
         in
-          ({model | patternState = {patternState | rows = value}}, Effects.none)
+          (updatePatternInModel {model | patternState = {patternState | rows = value}}, Effects.none)
 
       Columns value ->
         let
           model = addHistory model
         in
-        (  {model | patternState = {patternState | columns = value}}, Effects.none)
+        ( updatePatternInModel {model | patternState = {patternState | columns = value}}, Effects.none)
+
+      NoiseX value ->
+        let
+          model = addHistory model
+        in
+        ( updatePatternInModel {model | patternState = {patternState | noiseX = value}}, Effects.none)
+
+      NoiseY value ->
+        let
+          model = addHistory model
+        in
+        ( updatePatternInModel {model | patternState = {patternState | noiseY = value}}, Effects.none)
+
+      NoiseZ value ->
+        let
+          model = addHistory model
+        in
+        ( updatePatternInModel {model | patternState = {patternState | noiseZ = value}}, Effects.none)
+
+      NoiseDesctruction value ->
+        let
+          model = addHistory model
+        in
+        ( updatePatternInModel {model | patternState = {patternState | noiseDesctruction = value}}, Effects.none)
 
       Group value ->
         let
@@ -198,7 +172,7 @@ update action model =
           previewGroup = getGroup value previewGroupSize previewGroupSize
           boundingBox  = Pattern.bounding (previewGroup)
         in
-          ({ model |
+          (updatePatternInModel { model |
             patternState =
               { patternState |
                 group = getGroup value patternState.height patternState.width
@@ -216,7 +190,7 @@ update action model =
           model = addHistory model
           previewGroupSize = getTileSize model.patternState.groupType
         in
-          ({model | patternState =
+          (updatePatternInModel {model | patternState =
             { patternState |
               rasterSize = value
               ,tile = []
@@ -250,14 +224,10 @@ update action model =
           let
             model = addHistory model
             tile = [drawingState.lineStart, drawingState.lineEnd] :: patternState.tile
-
-            (noise, seed) = noise3d model (List.length tile)
-            e = Debug.log "noise" noise
           in
-            ({ model |
+            (updatePatternInModel { model |
               drawingState = { drawingState | isDrawing = False },
-              patternState = { patternState | tile = tile , noise = noise},
-              seed = seed
+              patternState = {patternState | tile = tile}
             }, Effects.none)
         else
           (model, Effects.none)
@@ -266,11 +236,9 @@ update action model =
         let
           model = addHistory model
           tile = List.filter (lineIsNearPoint mousePosition 5) patternState.tile
-          (noise, seed) = noise3d model (List.length tile)
         in
-          ({ model |
-            patternState = {patternState | tile = tile, noise = noise },
-            seed = seed
+          (updatePatternInModel { model |
+            patternState = {patternState | tile = tile}
           }, Effects.none)
 
       ClearTiles ->
@@ -278,7 +246,7 @@ update action model =
           model = addHistory model
         in
           ({ model |
-            patternState = {patternState | tile = [], noise = [] }
+            patternState = {patternState | tile = [], noise = [], pattern=[] }
 
           }, Effects.none)
 
@@ -287,10 +255,9 @@ update action model =
           model = addHistory model
           (i, seed') = getRandom model.seed 3 10
           tile = List.map (getRandomCoord drawingState.rasterCoords seed') [1..i]
-          (noise, seed) = noise3d model (List.length tile)
         in
-          ({model |
-            patternState = {patternState | tile = tile, noise = noise},
+          (updatePatternInModel {model |
+            patternState = {patternState | tile = tile},
             seed = seed'
           }, Effects.none)
 

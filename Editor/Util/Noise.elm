@@ -41,7 +41,8 @@ generatePerm : Random.Seed -> (Array Int, Random.Seed)
 generatePerm seed =
   [0..255]
   |> Array.fromList
-  |> \ list -> (Array.append list  (reverseArray list), seed)
+  |> Random.Array.shuffle seed
+  |> \ (list, seed) -> (Array.append list  (reverseArray list), seed)
 
 
 generatePermMod12 : Array Int -> Array Int
@@ -103,20 +104,28 @@ noise3d model z =
       let
         (perm, newSeed) = generatePerm seed
         permMod12 = generatePermMod12 perm
-        list = generateGrid  maxX maxY maxZ perm permMod12
+        list = generateGrid model z perm permMod12
       in
        (list, newSeed)
 
 
-generateGrid : Float -> Float -> Float -> Array Int -> Array Int -> List (List Float)
-generateGrid maxX maxY maxZ perm permMod12 =
-  List.foldr (
-    \x r -> List.foldr (
-      \y r -> (List.foldr (
-        \z r -> (calc3d perm permMod12 (x /10) (y/10) (z/2)) :: r
-      ) [] [1..maxZ]) :: r
-    ) r [1..maxY]
-  ) [] [1..maxX]
+generateGrid : Model -> Int -> Array Int -> Array Int -> List (List Float)
+generateGrid model z perm permMod12 =
+  let
+    maxX = toFloat model.patternState.columns
+    maxY = toFloat model.patternState.rows
+    maxZ = toFloat z
+    noiseX = toFloat model.patternState.noiseX
+    noiseY = toFloat model.patternState.noiseY
+    noiseZ = toFloat model.patternState.noiseZ
+  in
+    List.foldr (
+      \x r -> List.foldr (
+        \y r -> (List.foldr (
+          \z r -> (calc3d perm permMod12 (x /noiseX) (y/noiseY) (z*noiseZ)) :: r
+        ) [] [1..maxZ]) :: r
+      ) r [1..maxY]
+    ) [] [1..maxX]
 
 calc3d : Array Int -> Array Int -> Float -> Float -> Float -> Float
 calc3d perm permMod12 xin yin zin =

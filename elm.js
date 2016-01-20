@@ -10189,11 +10189,15 @@ Elm.Editor.Types.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
+   var Bezier = F4(function (a,b,c,d) {
+      return {p1: a,c1: b,c2: c,p2: d};
+   });
    var Line = F2(function (a,b) {    return {start: a,end: b};});
    var Point = F2(function (a,b) {    return {x: a,y: b};});
    return _elm.Editor.Types.values = {_op: _op
                                      ,Point: Point
-                                     ,Line: Line};
+                                     ,Line: Line
+                                     ,Bezier: Bezier};
 };
 Elm.Editor = Elm.Editor || {};
 Elm.Editor.Util = Elm.Editor.Util || {};
@@ -10932,6 +10936,10 @@ Elm.Editor.Model.make = function (_elm) {
                              150)))};
    var initialPatternState = {columns: 10
                              ,rows: 10
+                             ,noiseX: 10
+                             ,noiseY: 10
+                             ,noiseZ: 10
+                             ,noiseDesctruction: 5
                              ,width: 40
                              ,height: 40
                              ,groupType: "P1"
@@ -10942,7 +10950,8 @@ Elm.Editor.Model.make = function (_elm) {
                              ,tile: _U.list([])
                              ,group: A2($WallpaperGroup$Group.P1,40,40)
                              ,previewGroup: A2($WallpaperGroup$Group.P1,150,150)
-                             ,noise: _U.list([])};
+                             ,noise: _U.list([])
+                             ,pattern: _U.list([])};
    var initialModel = {patternState: initialPatternState
                       ,drawingState: initialDrawingState
                       ,colorState: initialColorState
@@ -10980,17 +10989,32 @@ Elm.Editor.Model.make = function (_elm) {
                            return function (i) {
                               return function (j) {
                                  return function (k) {
-                                    return {columns: a
-                                           ,rows: b
-                                           ,width: c
-                                           ,height: d
-                                           ,group: e
-                                           ,previewGroup: f
-                                           ,groupType: g
-                                           ,boundingBox: h
-                                           ,rasterSize: i
-                                           ,tile: j
-                                           ,noise: k};
+                                    return function (l) {
+                                       return function (m) {
+                                          return function (n) {
+                                             return function (o) {
+                                                return function (p) {
+                                                   return {columns: a
+                                                          ,rows: b
+                                                          ,noiseX: c
+                                                          ,noiseY: d
+                                                          ,noiseZ: e
+                                                          ,noiseDesctruction: f
+                                                          ,width: g
+                                                          ,height: h
+                                                          ,group: i
+                                                          ,previewGroup: j
+                                                          ,groupType: k
+                                                          ,boundingBox: l
+                                                          ,rasterSize: m
+                                                          ,tile: n
+                                                          ,noise: o
+                                                          ,pattern: p};
+                                                };
+                                             };
+                                          };
+                                       };
+                                    };
                                  };
                               };
                            };
@@ -11231,6 +11255,7 @@ Elm.Editor.Util.Noise.make = function (_elm) {
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Random = Elm.Random.make(_elm),
+   $Random$Array = Elm.Random.Array.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
@@ -11315,20 +11340,24 @@ Elm.Editor.Util.Noise.make = function (_elm) {
       return $Array.fromList($List.reverse($Array.toList(array)));
    };
    var generatePerm = function (seed) {
-      return function (list) {
+      return function (_p0) {
+         var _p1 = _p0;
+         var _p2 = _p1._0;
          return {ctor: "_Tuple2"
-                ,_0: A2($Array.append,list,reverseArray(list))
-                ,_1: seed};
-      }($Array.fromList(_U.range(0,255)));
+                ,_0: A2($Array.append,_p2,reverseArray(_p2))
+                ,_1: _p1._1};
+      }(A2($Random$Array.shuffle,
+      seed,
+      $Array.fromList(_U.range(0,255))));
    };
    var get = F2(function (arr,i) {
-      var _p0 = A2($Array.get,i,arr);
-      if (_p0.ctor === "Just") {
-            return _p0._0;
+      var _p3 = A2($Array.get,i,arr);
+      if (_p3.ctor === "Just") {
+            return _p3._0;
          } else {
             return _U.crashCase("Editor.Util.Noise",
             {start: {line: 30,column: 3},end: {line: 32,column: 48}},
-            _p0)("Error getting item");
+            _p3)("Error getting item");
          }
    });
    var getN = F8(function (x,y,z,i,j,k,perm,permMod12) {
@@ -11363,13 +11392,13 @@ Elm.Editor.Util.Noise.make = function (_elm) {
       var y3 = y0 - 1 + 3 * g3;
       var z0$ = $Basics.toFloat(k) - t;
       var z0 = zin - z0$;
-      var _p2 = A3(getCornerOffset,x0,y0,z0);
-      var i1 = _p2._0;
-      var j1 = _p2._1;
-      var k1 = _p2._2;
-      var i2 = _p2._3;
-      var j2 = _p2._4;
-      var k2 = _p2._5;
+      var _p5 = A3(getCornerOffset,x0,y0,z0);
+      var i1 = _p5._0;
+      var j1 = _p5._1;
+      var k1 = _p5._2;
+      var i2 = _p5._3;
+      var j2 = _p5._4;
+      var k2 = _p5._5;
       var x1 = x0 - $Basics.toFloat(i1) + g3;
       var y1 = y0 - $Basics.toFloat(j1) + g3;
       var x2 = x0 - $Basics.toFloat(i2) + 2 * g3;
@@ -11400,7 +11429,13 @@ Elm.Editor.Util.Noise.make = function (_elm) {
       var n3 = A8(getN,x3,y3,z3,ii + 1,jj + 1,kk + 1,perm,permMod12);
       return 32 * (n0 + n1 + n2 + n3);
    });
-   var generateGrid = F5(function (maxX,maxY,maxZ,perm,permMod12) {
+   var generateGrid = F4(function (model,z,perm,permMod12) {
+      var noiseZ = $Basics.toFloat(model.patternState.noiseZ);
+      var noiseY = $Basics.toFloat(model.patternState.noiseY);
+      var noiseX = $Basics.toFloat(model.patternState.noiseX);
+      var maxZ = $Basics.toFloat(z);
+      var maxY = $Basics.toFloat(model.patternState.rows);
+      var maxX = $Basics.toFloat(model.patternState.columns);
       return A3($List.foldr,
       F2(function (x,r) {
          return A3($List.foldr,
@@ -11409,7 +11444,7 @@ Elm.Editor.Util.Noise.make = function (_elm) {
             A3($List.foldr,
             F2(function (z,r) {
                return A2($List._op["::"],
-               A5(calc3d,perm,permMod12,x / 10,y / 10,z / 2),
+               A5(calc3d,perm,permMod12,x / noiseX,y / noiseY,z * noiseZ),
                r);
             }),
             _U.list([]),
@@ -11429,11 +11464,11 @@ Elm.Editor.Util.Noise.make = function (_elm) {
       var maxX = $Basics.toFloat(model.patternState.columns);
       if (_U.eq(maxX,0) || (_U.eq(maxY,0) || _U.eq(maxZ,0)))
       return {ctor: "_Tuple2",_0: _U.list([]),_1: seed}; else {
-            var _p3 = generatePerm(seed);
-            var perm = _p3._0;
-            var newSeed = _p3._1;
+            var _p6 = generatePerm(seed);
+            var perm = _p6._0;
+            var newSeed = _p6._1;
             var permMod12 = generatePermMod12(perm);
-            var list = A5(generateGrid,maxX,maxY,maxZ,perm,permMod12);
+            var list = A4(generateGrid,model,z,perm,permMod12);
             return {ctor: "_Tuple2",_0: list,_1: newSeed};
          }
    });
@@ -11456,6 +11491,171 @@ Elm.Editor.Util.Noise.make = function (_elm) {
                                           ,noise3d: noise3d
                                           ,generateGrid: generateGrid
                                           ,calc3d: calc3d};
+};
+Elm.Editor = Elm.Editor || {};
+Elm.Editor.Util = Elm.Editor.Util || {};
+Elm.Editor.Util.Pattern = Elm.Editor.Util.Pattern || {};
+Elm.Editor.Util.Pattern.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Util = _elm.Editor.Util || {};
+   _elm.Editor.Util.Pattern = _elm.Editor.Util.Pattern || {};
+   if (_elm.Editor.Util.Pattern.values)
+   return _elm.Editor.Util.Pattern.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Editor$Model = Elm.Editor.Model.make(_elm),
+   $Editor$Types = Elm.Editor.Types.make(_elm),
+   $Editor$Util$Noise = Elm.Editor.Util.Noise.make(_elm),
+   $Editor$Util$TileSize = Elm.Editor.Util.TileSize.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
+   var _op = {};
+   var randomPoint = F3(function (p,noise,noiseDesctruction) {
+      var rad = noise * $Basics.toFloat(noiseDesctruction);
+      var angle = noise * $Basics.pi * 4;
+      return {x: p.x + $Basics.cos(angle) * rad
+             ,y: p.y + $Basics.sin(angle) * rad};
+   });
+   var calcPath = F2(function (noiseDesctruction,_p0) {
+      var _p1 = _p0;
+      var _p3 = _p1._0;
+      var _p2 = _p1._1;
+      var p2 = A2($Maybe.withDefault,
+      {x: 0,y: 0},
+      $List.head($List.reverse(_p2)));
+      var c2 = A3(randomPoint,p2,_p3,noiseDesctruction);
+      var p1 = A2($Maybe.withDefault,{x: 0,y: 0},$List.head(_p2));
+      var c1 = A3(randomPoint,p1,0 - _p3,noiseDesctruction);
+      return {p1: p1,p2: p2,c1: c1,c2: c2};
+   });
+   var calcTile = F2(function (noiseDesctruction,tile) {
+      var lines = A2($List.filter,
+      function (_p4) {
+         var _p5 = _p4;
+         return _U.cmp(_p5._0,0) > 0;
+      },
+      tile);
+      return A2($List.map,calcPath(noiseDesctruction),lines);
+   });
+   var getTileLength = function (tiles) {
+      return $List.length(A2($Maybe.withDefault,
+      _U.list([]),
+      $List.head(tiles)));
+   };
+   var scalePoint = F2(function (_p6,p) {
+      var _p7 = _p6;
+      var _p8 = _p7.groupType;
+      return {x: p.x / $Editor$Util$TileSize.getTileSize(_p8) * _p7.width
+             ,y: p.y / $Editor$Util$TileSize.getTileSize(_p8) * _p7.height};
+   });
+   var updatePatternInModel = function (model) {
+      var patternState = model.patternState;
+      var group = patternState.group;
+      var columns = patternState.columns;
+      var rows = patternState.rows;
+      var tile = A2($List.map,
+      $List.map(scalePoint(patternState)),
+      patternState.tile);
+      var groups = A4($WallpaperGroup$Pattern.pattern,
+      group,
+      rows,
+      columns,
+      tile);
+      var maxZ = getTileLength(groups);
+      var _p9 = A2($Editor$Util$Noise.noise3d,model,maxZ);
+      var noise = _p9._0;
+      var seed = _p9._1;
+      var noisyGroups = A3($List.map2,
+      $List.map2(F2(function (v0,v1) {
+         return {ctor: "_Tuple2",_0: v0,_1: v1};
+      })),
+      noise,
+      groups);
+      var noiseDesctruction = patternState.noiseDesctruction;
+      var pattern = A2($List.map,
+      calcTile(noiseDesctruction),
+      noisyGroups);
+      return _U.update(model,
+      {patternState: _U.update(patternState,{pattern: pattern})
+      ,seed: seed});
+   };
+   return _elm.Editor.Util.Pattern.values = {_op: _op
+                                            ,scalePoint: scalePoint
+                                            ,getTileLength: getTileLength
+                                            ,randomPoint: randomPoint
+                                            ,calcPath: calcPath
+                                            ,calcTile: calcTile
+                                            ,updatePatternInModel: updatePatternInModel};
+};
+Elm.Editor = Elm.Editor || {};
+Elm.Editor.Util = Elm.Editor.Util || {};
+Elm.Editor.Util.History = Elm.Editor.Util.History || {};
+Elm.Editor.Util.History.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Util = _elm.Editor.Util || {};
+   _elm.Editor.Util.History = _elm.Editor.Util.History || {};
+   if (_elm.Editor.Util.History.values)
+   return _elm.Editor.Util.History.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Editor$Model = Elm.Editor.Model.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var redo = function (model) {
+      var newHistory = A2($Maybe.withDefault,
+      _U.list([]),
+      $List.tail(model.redoStack));
+      var lastState = $List.head(model.redoStack);
+      var actualState = model.patternState;
+      var undoStack = model.undoStack;
+      var _p0 = lastState;
+      if (_p0.ctor === "Just") {
+            return _U.update(model,
+            {redoStack: newHistory
+            ,patternState: _p0._0
+            ,undoStack: A2($List._op["::"],actualState,undoStack)});
+         } else {
+            return model;
+         }
+   };
+   var undo = function (model) {
+      var redoStack = model.redoStack;
+      var undoStack = model.undoStack;
+      var actualState = model.patternState;
+      var lastState = $List.head(model.undoStack);
+      var _p1 = lastState;
+      if (_p1.ctor === "Just") {
+            return _U.update(model,
+            {undoStack: A2($Maybe.withDefault,
+            _U.list([]),
+            $List.tail(undoStack))
+            ,patternState: _p1._0
+            ,redoStack: A2($List._op["::"],actualState,redoStack)});
+         } else {
+            return model;
+         }
+   };
+   var addHistory = function (model) {
+      var undoStack = model.undoStack;
+      var actualState = model.patternState;
+      return _U.update(model,
+      {undoStack: A2($List._op["::"],actualState,undoStack)
+      ,redoStack: _U.list([])});
+   };
+   return _elm.Editor.Util.History.values = {_op: _op
+                                            ,addHistory: addHistory
+                                            ,undo: undo
+                                            ,redo: redo};
 };
 Elm.Native.Effects = {};
 Elm.Native.Effects.make = function(localRuntime) {
@@ -11728,7 +11928,8 @@ Elm.Editor.Action.make = function (_elm) {
    $Editor$Signals = Elm.Editor.Signals.make(_elm),
    $Editor$Types = Elm.Editor.Types.make(_elm),
    $Editor$Util$Geom = Elm.Editor.Util.Geom.make(_elm),
-   $Editor$Util$Noise = Elm.Editor.Util.Noise.make(_elm),
+   $Editor$Util$History = Elm.Editor.Util.History.make(_elm),
+   $Editor$Util$Pattern = Elm.Editor.Util.Pattern.make(_elm),
    $Editor$Util$Raster = Elm.Editor.Util.Raster.make(_elm),
    $Editor$Util$TileSize = Elm.Editor.Util.TileSize.make(_elm),
    $Effects = Elm.Effects.make(_elm),
@@ -11741,56 +11942,15 @@ Elm.Editor.Action.make = function (_elm) {
    $WallpaperGroup$Group = Elm.WallpaperGroup.Group.make(_elm),
    $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
    var _op = {};
-   var redo = function (model) {
-      var newHistory = A2($Maybe.withDefault,
-      _U.list([]),
-      $List.tail(model.redoStack));
-      var lastState = $List.head(model.redoStack);
-      var actualState = model.patternState;
-      var undoStack = model.undoStack;
-      var _p0 = lastState;
-      if (_p0.ctor === "Just") {
-            return _U.update(model,
-            {redoStack: newHistory
-            ,patternState: _p0._0
-            ,undoStack: A2($List._op["::"],actualState,undoStack)});
-         } else {
-            return model;
-         }
-   };
-   var undo = function (model) {
-      var redoStack = model.redoStack;
-      var undoStack = model.undoStack;
-      var actualState = model.patternState;
-      var lastState = $List.head(model.undoStack);
-      var _p1 = lastState;
-      if (_p1.ctor === "Just") {
-            return _U.update(model,
-            {undoStack: A2($Maybe.withDefault,
-            _U.list([]),
-            $List.tail(undoStack))
-            ,patternState: _p1._0
-            ,redoStack: A2($List._op["::"],actualState,redoStack)});
-         } else {
-            return model;
-         }
-   };
-   var addHistory = function (model) {
-      var undoStack = model.undoStack;
-      var actualState = model.patternState;
-      return _U.update(model,
-      {undoStack: A2($List._op["::"],actualState,undoStack)
-      ,redoStack: _U.list([])});
-   };
    var getRandom = F3(function (seed,min,max) {
       var generator = A2($Random.$int,min,max);
       return A2($Random.generate,generator,seed);
    });
    var getRandomCoord = F3(function (points,seed,i) {
       var getValue = function (item) {
-         var _p2 = item;
-         if (_p2.ctor === "Just") {
-               return _p2._0;
+         var _p0 = item;
+         if (_p0.ctor === "Just") {
+               return _p0._0;
             } else {
                return {x: 0,y: 0};
             }
@@ -11799,11 +11959,11 @@ Elm.Editor.Action.make = function (_elm) {
       seed,
       $Random.minInt,
       $Random.maxInt)));
-      var _p3 = A3(getRandom,seed$,0,$List.length(points) - 1);
-      var i1 = _p3._0;
-      var seed$$ = _p3._1;
-      var _p4 = A3(getRandom,seed$$,0,$List.length(points) - 1);
-      var i2 = _p4._0;
+      var _p1 = A3(getRandom,seed$,0,$List.length(points) - 1);
+      var i1 = _p1._0;
+      var seed$$ = _p1._1;
+      var _p2 = A3(getRandom,seed$$,0,$List.length(points) - 1);
+      var i2 = _p2._0;
       return _U.list([getValue(A2($Array.get,
                      i1,
                      $Array.fromList(points)))
@@ -11874,6 +12034,12 @@ Elm.Editor.Action.make = function (_elm) {
       return {ctor: "RasterSize",_0: a};
    };
    var Group = function (a) {    return {ctor: "Group",_0: a};};
+   var NoiseDesctruction = function (a) {
+      return {ctor: "NoiseDesctruction",_0: a};
+   };
+   var NoiseZ = function (a) {    return {ctor: "NoiseZ",_0: a};};
+   var NoiseY = function (a) {    return {ctor: "NoiseY",_0: a};};
+   var NoiseX = function (a) {    return {ctor: "NoiseX",_0: a};};
    var Rows = function (a) {    return {ctor: "Rows",_0: a};};
    var Columns = function (a) {
       return {ctor: "Columns",_0: a};
@@ -11883,69 +12049,95 @@ Elm.Editor.Action.make = function (_elm) {
       var colorState = model.colorState;
       var drawingState = model.drawingState;
       var patternState = model.patternState;
-      var _p5 = action;
-      switch (_p5.ctor)
+      var _p3 = action;
+      switch (_p3.ctor)
       {case "NoOp": return {ctor: "_Tuple2"
                            ,_0: model
                            ,_1: $Effects.none};
-         case "Rows": var model = addHistory(model);
+         case "Rows": var model = $Editor$Util$History.addHistory(model);
            return {ctor: "_Tuple2"
-                  ,_0: _U.update(model,
-                  {patternState: _U.update(patternState,{rows: _p5._0})})
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{rows: _p3._0})}))
                   ,_1: $Effects.none};
-         case "Columns": var model = addHistory(model);
+         case "Columns":
+         var model = $Editor$Util$History.addHistory(model);
            return {ctor: "_Tuple2"
-                  ,_0: _U.update(model,
-                  {patternState: _U.update(patternState,{columns: _p5._0})})
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{columns: _p3._0})}))
                   ,_1: $Effects.none};
-         case "Group": var _p6 = _p5._0;
-           var previewGroupSize = $Editor$Util$TileSize.getTileSize(_p6);
+         case "NoiseX":
+         var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{noiseX: _p3._0})}))
+                  ,_1: $Effects.none};
+         case "NoiseY":
+         var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{noiseY: _p3._0})}))
+                  ,_1: $Effects.none};
+         case "NoiseZ":
+         var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{noiseZ: _p3._0})}))
+                  ,_1: $Effects.none};
+         case "NoiseDesctruction":
+         var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,
+                  {noiseDesctruction: _p3._0})}))
+                  ,_1: $Effects.none};
+         case "Group": var _p4 = _p3._0;
+           var previewGroupSize = $Editor$Util$TileSize.getTileSize(_p4);
            var previewGroup = A3(getGroup,
-           _p6,
+           _p4,
            previewGroupSize,
            previewGroupSize);
            var boundingBox = $WallpaperGroup$Pattern.bounding(previewGroup);
-           var model = addHistory(model);
+           var model = $Editor$Util$History.addHistory(model);
            return {ctor: "_Tuple2"
-                  ,_0: _U.update(model,
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
                   {patternState: _U.update(patternState,
-                  {group: A3(getGroup,_p6,patternState.height,patternState.width)
+                  {group: A3(getGroup,_p4,patternState.height,patternState.width)
                   ,previewGroup: previewGroup
-                  ,groupType: _p6
+                  ,groupType: _p4
                   ,boundingBox: boundingBox})
                   ,drawingState: _U.update(drawingState,
                   {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
                   patternState.rasterSize,
                   $WallpaperGroup$Pattern.bounding(A3(getGroup,
-                  _p6,
+                  _p4,
                   previewGroupSize,
-                  previewGroupSize)))})})
+                  previewGroupSize)))})}))
                   ,_1: $Effects.none};
-         case "RasterSize": var _p7 = _p5._0;
-           var model = addHistory(model);
+         case "RasterSize": var _p5 = _p3._0;
+           var model = $Editor$Util$History.addHistory(model);
            var previewGroupSize = $Editor$Util$TileSize.getTileSize(model.patternState.groupType);
            return {ctor: "_Tuple2"
-                  ,_0: _U.update(model,
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
                   {patternState: _U.update(patternState,
-                  {rasterSize: _p7,tile: _U.list([])})
+                  {rasterSize: _p5,tile: _U.list([])})
                   ,drawingState: _U.update(drawingState,
                   {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
-                  _p7,
+                  _p5,
                   $WallpaperGroup$Pattern.bounding(A3(getGroup,
                   patternState.groupType,
                   previewGroupSize,
-                  previewGroupSize)))})})
+                  previewGroupSize)))})}))
                   ,_1: $Effects.none};
-         case "LineStart": var _p8 = _p5._0;
+         case "LineStart": var _p6 = _p3._0;
            return {ctor: "_Tuple2"
                   ,_0: _U.update(model,
                   {drawingState: _U.update(drawingState,
                   {lineStart: A2($Editor$Util$Geom.snap,
                   drawingState.rasterCoords,
-                  _p8)
+                  _p6)
                   ,lineEnd: A2($Editor$Util$Geom.snap,
                   drawingState.rasterCoords,
-                  _p8)
+                  _p6)
                   ,isDrawing: true})})
                   ,_1: $Effects.none};
          case "LineMove":
@@ -11954,7 +12146,7 @@ Elm.Editor.Action.make = function (_elm) {
                                          {drawingState: _U.update(drawingState,
                                          {lineEnd: A2($Editor$Util$Geom.snap,
                                          drawingState.rasterCoords,
-                                         _p5._0)})})
+                                         _p3._0)})})
                                          ,_1: $Effects.none} : {ctor: "_Tuple2"
                                                                ,_0: model
                                                                ,_1: $Effects.none};
@@ -11962,81 +12154,65 @@ Elm.Editor.Action.make = function (_elm) {
                  var tile = A2($List._op["::"],
                  _U.list([drawingState.lineStart,drawingState.lineEnd]),
                  patternState.tile);
-                 var model = addHistory(model);
-                 var _p9 = A2($Editor$Util$Noise.noise3d,
-                 model,
-                 $List.length(tile));
-                 var noise = _p9._0;
-                 var seed = _p9._1;
-                 var e = A2($Debug.log,"noise",noise);
+                 var model = $Editor$Util$History.addHistory(model);
                  return {ctor: "_Tuple2"
-                        ,_0: _U.update(model,
+                        ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
                         {drawingState: _U.update(drawingState,{isDrawing: false})
-                        ,patternState: _U.update(patternState,{tile: tile,noise: noise})
-                        ,seed: seed})
+                        ,patternState: _U.update(patternState,{tile: tile})}))
                         ,_1: $Effects.none};
               } else return {ctor: "_Tuple2",_0: model,_1: $Effects.none};
          case "DeleteLine": var tile = A2($List.filter,
-           A2($Editor$Util$Geom.lineIsNearPoint,_p5._0,5),
+           A2($Editor$Util$Geom.lineIsNearPoint,_p3._0,5),
            patternState.tile);
-           var model = addHistory(model);
-           var _p10 = A2($Editor$Util$Noise.noise3d,
-           model,
-           $List.length(tile));
-           var noise = _p10._0;
-           var seed = _p10._1;
+           var model = $Editor$Util$History.addHistory(model);
            return {ctor: "_Tuple2"
-                  ,_0: _U.update(model,
-                  {patternState: _U.update(patternState,{tile: tile,noise: noise})
-                  ,seed: seed})
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{tile: tile})}))
                   ,_1: $Effects.none};
-         case "ClearTiles": var model = addHistory(model);
+         case "ClearTiles":
+         var model = $Editor$Util$History.addHistory(model);
            return {ctor: "_Tuple2"
                   ,_0: _U.update(model,
                   {patternState: _U.update(patternState,
-                  {tile: _U.list([]),noise: _U.list([])})})
+                  {tile: _U.list([]),noise: _U.list([]),pattern: _U.list([])})})
                   ,_1: $Effects.none};
-         case "Random": var model = addHistory(model);
-           var _p11 = A3(getRandom,model.seed,3,10);
-           var i = _p11._0;
-           var seed$ = _p11._1;
+         case "Random":
+         var model = $Editor$Util$History.addHistory(model);
+           var _p7 = A3(getRandom,model.seed,3,10);
+           var i = _p7._0;
+           var seed$ = _p7._1;
            var tile = A2($List.map,
            A2(getRandomCoord,drawingState.rasterCoords,seed$),
            _U.range(1,i));
-           var _p12 = A2($Editor$Util$Noise.noise3d,
-           model,
-           $List.length(tile));
-           var noise = _p12._0;
-           var seed = _p12._1;
            return {ctor: "_Tuple2"
-                  ,_0: _U.update(model,
-                  {patternState: _U.update(patternState,{tile: tile,noise: noise})
-                  ,seed: seed$})
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{tile: tile})
+                  ,seed: seed$}))
                   ,_1: $Effects.none};
          case "Undo": return {ctor: "_Tuple2"
-                             ,_0: undo(model)
+                             ,_0: $Editor$Util$History.undo(model)
                              ,_1: $Effects.none};
          case "Redo": return {ctor: "_Tuple2"
-                             ,_0: redo(model)
+                             ,_0: $Editor$Util$History.redo(model)
                              ,_1: $Effects.none};
-         case "StartColorSearch": var _p14 = _p5._0;
+         case "StartColorSearch": var _p9 = _p3._0;
            var sendTask = A2($Task.andThen,
-           A2($Signal.send,$Editor$Signals.requestPalette.address,_p14),
-           function (_p13) {
+           A2($Signal.send,$Editor$Signals.requestPalette.address,_p9),
+           function (_p8) {
               return $Task.succeed(NoOp);
            });
-           var model = addHistory(model);
+           var model = $Editor$Util$History.addHistory(model);
            return {ctor: "_Tuple2"
                   ,_0: _U.update(model,
                   {colorState: _U.update(colorState,
-                  {colorSearch: _p14,loading: true})})
+                  {colorSearch: _p9,loading: true})})
                   ,_1: $Effects.task(sendTask)};
-         case "NewColors": var _p15 = _p5._0;
-           if (_p15.ctor === "Ok") {
+         case "NewColors": var _p10 = _p3._0;
+           if (_p10.ctor === "Ok") {
                  return {ctor: "_Tuple2"
                         ,_0: _U.update(model,
                         {colorState: _U.update(colorState,
-                        {palettes: _p15._0,loading: false})})
+                        {palettes: _p10._0,loading: false})})
                         ,_1: $Effects.none};
               } else {
                  return {ctor: "_Tuple2"
@@ -12045,16 +12221,20 @@ Elm.Editor.Action.make = function (_elm) {
                         {palettes: _U.list([]),loading: false})})
                         ,_1: $Effects.none};
               }
-         default: var model = addHistory(model);
+         default: var model = $Editor$Util$History.addHistory(model);
            return {ctor: "_Tuple2"
                   ,_0: _U.update(model,
-                  {colorState: _U.update(colorState,{selectedPalette: _p5._0})})
+                  {colorState: _U.update(colorState,{selectedPalette: _p3._0})})
                   ,_1: $Effects.none};}
    });
    return _elm.Editor.Action.values = {_op: _op
                                       ,NoOp: NoOp
                                       ,Columns: Columns
                                       ,Rows: Rows
+                                      ,NoiseX: NoiseX
+                                      ,NoiseY: NoiseY
+                                      ,NoiseZ: NoiseZ
+                                      ,NoiseDesctruction: NoiseDesctruction
                                       ,Group: Group
                                       ,RasterSize: RasterSize
                                       ,LineStart: LineStart
@@ -12071,9 +12251,6 @@ Elm.Editor.Action.make = function (_elm) {
                                       ,getGroup: getGroup
                                       ,getRandom: getRandom
                                       ,getRandomCoord: getRandomCoord
-                                      ,addHistory: addHistory
-                                      ,undo: undo
-                                      ,redo: redo
                                       ,update: update};
 };
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
@@ -15744,49 +15921,26 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
    var _U = Elm.Native.Utils.make(_elm),
    $Basics = Elm.Basics.make(_elm),
    $Debug = Elm.Debug.make(_elm),
-   $Editor$Model = Elm.Editor.Model.make(_elm),
    $Editor$Types = Elm.Editor.Types.make(_elm),
-   $Editor$Util$Noise = Elm.Editor.Util.Noise.make(_elm),
    $Editor$Util$Svg = Elm.Editor.Util.Svg.make(_elm),
-   $Editor$Util$TileSize = Elm.Editor.Util.TileSize.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $String = Elm.String.make(_elm),
    $Svg = Elm.Svg.make(_elm),
-   $Svg$Attributes = Elm.Svg.Attributes.make(_elm),
-   $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
+   $Svg$Attributes = Elm.Svg.Attributes.make(_elm);
    var _op = {};
-   var getTileLength = function (tiles) {
-      return $List.length(A2($Maybe.withDefault,
-      _U.list([]),
-      $List.head(tiles)));
-   };
-   var randomPoint = F2(function (p,noise) {
-      var rad = noise * 4;
-      var angle = noise * $Basics.pi * 4;
-      return {x: p.x + $Basics.cos(angle) * rad
-             ,y: p.y + $Basics.sin(angle) * rad};
-   });
    var renderPath = function (_p0) {
       var _p1 = _p0;
-      var _p3 = _p1._0;
-      var _p2 = _p1._1;
-      var p2 = A2($Maybe.withDefault,
-      {x: 0,y: 0},
-      $List.head($List.reverse(_p2)));
-      var c2 = A2(randomPoint,p2,_p3);
-      var p1 = A2($Maybe.withDefault,{x: 0,y: 0},$List.head(_p2));
-      var c1 = A2(randomPoint,p1,_p3 * -1);
       var path = A2($String.join,
       " ",
       _U.list(["M"
-              ,$Editor$Util$Svg.pointToString(p1)
+              ,$Editor$Util$Svg.pointToString(_p1.p1)
               ,"C"
-              ,$Editor$Util$Svg.pointToString(c1)
-              ,$Editor$Util$Svg.pointToString(c2)
-              ,$Editor$Util$Svg.pointToString(p2)]));
+              ,$Editor$Util$Svg.pointToString(_p1.c1)
+              ,$Editor$Util$Svg.pointToString(_p1.c2)
+              ,$Editor$Util$Svg.pointToString(_p1.p2)]));
       return A2($Svg.path,
       _U.list([$Svg$Attributes.d(path)
               ,$Svg$Attributes.fill("none")
@@ -15794,57 +15948,12 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
       _U.list([]));
    };
    var renderTile = function (tile) {
-      var lines = A2($List.filter,
-      function (_p4) {
-         var _p5 = _p4;
-         return _U.cmp(_p5._0,0) > 0;
-      },
-      tile);
       return A2($Svg.g,
       _U.list([$Svg$Attributes.stroke("grey")]),
-      A2($List.map,renderPath,lines));
+      A2($List.map,renderPath,tile));
    };
-   var renderLine = function (_p6) {
-      var _p7 = _p6;
-      return A2($Svg.line,
-      A3($List.foldl,
-      $Editor$Util$Svg.lineToAttribute,
-      _U.list([]),
-      _p7._1),
-      _U.list([]));
-   };
-   var scalePoint = F2(function (_p8,p) {
-      var _p9 = _p8;
-      var _p10 = _p9.groupType;
-      return {x: p.x / $Editor$Util$TileSize.getTileSize(_p10) * _p9.width
-             ,y: p.y / $Editor$Util$TileSize.getTileSize(_p10) * _p9.height};
-   });
-   var renderColorizedNoisyTiles = function (model) {
-      var patternState = model.patternState;
-      var group = A2($Debug.log,"",patternState.group);
-      var columns = patternState.columns;
-      var rows = patternState.rows;
-      var tile = A2($List.map,
-      $List.map(scalePoint(patternState)),
-      patternState.tile);
-      var groups = A4($WallpaperGroup$Pattern.pattern,
-      group,
-      rows,
-      columns,
-      tile);
-      var maxZ = getTileLength(groups);
-      var noise = $Basics.fst(A2($Editor$Util$Noise.noise3d,
-      model,
-      maxZ));
-      var noisyGroups = A3($List.map2,
-      $List.map2(F2(function (v0,v1) {
-         return {ctor: "_Tuple2",_0: v0,_1: v1};
-      })),
-      noise,
-      groups);
-      return A2($Svg.g,
-      _U.list([]),
-      A2($List.map,renderTile,noisyGroups));
+   var renderColorizedNoisyTiles = function (tiles) {
+      return A2($Svg.g,_U.list([]),A2($List.map,renderTile,tiles));
    };
    var stage = function (model) {
       return A2($Svg.svg,
@@ -15853,13 +15962,19 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
               ,$Svg$Attributes.y("0")]),
       _U.list([renderColorizedNoisyTiles(model)]));
    };
+   var renderLine = function (_p2) {
+      var _p3 = _p2;
+      return A2($Svg.line,
+      A3($List.foldl,
+      $Editor$Util$Svg.lineToAttribute,
+      _U.list([]),
+      _p3._1),
+      _U.list([]));
+   };
    return _elm.Editor.Ui.PatternStage.values = {_op: _op
-                                               ,scalePoint: scalePoint
                                                ,renderLine: renderLine
                                                ,renderPath: renderPath
-                                               ,randomPoint: randomPoint
                                                ,renderTile: renderTile
-                                               ,getTileLength: getTileLength
                                                ,renderColorizedNoisyTiles: renderColorizedNoisyTiles
                                                ,stage: stage};
 };
@@ -15920,6 +16035,34 @@ Elm.Editor.View.make = function (_elm) {
                                                 ,createAction: function (str) {
                                                    return $Editor$Action.Rows($Editor$Util$Convert.toInt(str));
                                                 }})
+                      ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.noiseX)
+                                                ,min: "1"
+                                                ,max: "100"
+                                                ,address: address
+                                                ,createAction: function (str) {
+                                                   return $Editor$Action.NoiseX($Editor$Util$Convert.toInt(str));
+                                                }})
+                      ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.noiseY)
+                                                ,min: "1"
+                                                ,max: "100"
+                                                ,address: address
+                                                ,createAction: function (str) {
+                                                   return $Editor$Action.NoiseY($Editor$Util$Convert.toInt(str));
+                                                }})
+                      ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.noiseZ)
+                                                ,min: "1"
+                                                ,max: "100"
+                                                ,address: address
+                                                ,createAction: function (str) {
+                                                   return $Editor$Action.NoiseZ($Editor$Util$Convert.toInt(str));
+                                                }})
+                      ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.noiseDesctruction)
+                                                ,min: "1"
+                                                ,max: "20"
+                                                ,address: address
+                                                ,createAction: function (str) {
+                                                   return $Editor$Action.NoiseDesctruction($Editor$Util$Convert.toInt(str));
+                                                }})
                       ,A2($Editor$Ui$GroupSelect.groupSelect,
                       patternState.groupType,
                       address)
@@ -15968,7 +16111,7 @@ Elm.Editor.View.make = function (_elm) {
                       model.colorState)]))
               ,A2($Html.div,
               _U.list([$Html$Attributes.$class("main lalasd")]),
-              _U.list([$Editor$Ui$PatternStage.stage(model)]))]));
+              _U.list([$Editor$Ui$PatternStage.stage(model.patternState.pattern)]))]));
    });
    return _elm.Editor.View.values = {_op: _op,view: view};
 };

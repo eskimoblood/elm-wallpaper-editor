@@ -3,7 +3,7 @@ module Editor.Ui.ColorFinder where
 
 import Html exposing (..)
 import Html.Attributes as Attr
-import Html.Events exposing (on, targetValue)
+import Html.Events exposing (on, targetValue, onBlur, onFocus)
 import Editor.Action exposing (..)
 import Editor.Model exposing (..)
 
@@ -17,14 +17,16 @@ palette : Signal.Address Action -> List String -> Html
 palette address colors =
   li
    [ Attr.class "preview"
-   , on "click" targetValue (\str -> Signal.message address  (SelectPalette colors))]
+   , Html.Events.onClick address  (SelectPalette colors)]
    (List.map colorItem colors)
 
 
-colorList : Bool -> List (List String) -> Signal.Address Action -> Html
-colorList isLoading palettes address =
+colorList : Bool -> Bool -> List (List String) -> Signal.Address Action -> Html
+colorList isShown isLoading palettes address =
   if isLoading then
     ul [Attr.class "loader"] [li [][]]
+  else if isShown && ((List.length palettes) == 0) then
+      span [] []
   else
     ul [] (List.map (palette address) palettes)
 
@@ -37,10 +39,12 @@ colorFinder address model =
       [Attr.class "column"]
       [input
           [ on "input" targetValue (\str -> Signal.message address  (StartColorSearch str))
+          , onBlur address (TogglePallete False)
+          , onFocus address (TogglePallete True)
           , Attr.type' "text"
           , Attr.value model.colorSearch
          ]
          []
-      , colorList model.loading model.palettes address
+      , colorList model.paletteOpen model.loading model.palettes address
       ]
     ]

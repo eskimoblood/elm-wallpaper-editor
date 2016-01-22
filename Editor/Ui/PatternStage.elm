@@ -1,7 +1,7 @@
 module Editor.Ui.PatternStage where
 
 import Svg exposing (..)
-import Svg.Attributes exposing (..)
+import Svg.Attributes as Attr exposing (..)
 import Editor.Types exposing (Tile, Point, MultiLine, Bezier)
 import Editor.Util.Svg exposing (lineToAttribute, renderTiles, pointToString)
 import String
@@ -14,13 +14,15 @@ renderLine (noise, line) =
 
 
 renderPath :  Bezier -> Svg
-renderPath {p1, p2, c1, c2}  =
+renderPath {p1, p2, c1, c2, opacity, color}  =
  let
    path = String.join " " ["M", (pointToString p1), "C", (pointToString c1), (pointToString c2), (pointToString p2)]
 
  in
   Svg.path
      [ d path
+     , stroke color
+     , Attr.opacity (toString opacity)
      , fill "none"
      , class "tile"
      ]
@@ -28,7 +30,7 @@ renderPath {p1, p2, c1, c2}  =
 
 renderTile : List Bezier -> Svg
 renderTile  tile =
-    Svg.g [stroke "grey"] (List.map renderPath tile)
+    Svg.g [] (List.map renderPath tile)
 
 
 renderColorizedNoisyTiles : List (List Bezier) -> Svg

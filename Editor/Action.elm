@@ -37,6 +37,7 @@ type Action
   | StartColorSearch String
   | NewColors (Result String (List (List String)))
   | SelectPalette (List String)
+  | TogglePallete Bool
 
 getGroup : String -> Float -> Float -> Group
 getGroup groupType height width =
@@ -295,6 +296,11 @@ update action model =
         let
           model = addHistory model
         in
-          ({ model |
+          (updatePatternInModel { model |
             colorState = {colorState | selectedPalette = palette }
+          }, Effects.none)
+
+      TogglePallete shown ->
+          ( { model |
+            colorState = {colorState | paletteOpen = shown }
           }, Effects.none)

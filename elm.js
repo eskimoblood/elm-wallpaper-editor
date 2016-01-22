@@ -10189,8 +10189,8 @@ Elm.Editor.Types.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
-   var Bezier = F4(function (a,b,c,d) {
-      return {p1: a,c1: b,c2: c,p2: d};
+   var Bezier = F6(function (a,b,c,d,e,f) {
+      return {p1: a,c1: b,c2: c,p2: d,color: e,opacity: f};
    });
    var Line = F2(function (a,b) {    return {start: a,end: b};});
    var Point = F2(function (a,b) {    return {x: a,y: b};});
@@ -10925,7 +10925,8 @@ Elm.Editor.Model.make = function (_elm) {
    var initialColorState = {colorSearch: ""
                            ,palettes: _U.list([])
                            ,selectedPalette: _U.list([])
-                           ,loading: true};
+                           ,loading: false
+                           ,paletteOpen: false};
    var initialDrawingState = {lineStart: {x: 0,y: 0}
                              ,lineEnd: {x: 0,y: 0}
                              ,isDrawing: false
@@ -10966,11 +10967,12 @@ Elm.Editor.Model.make = function (_elm) {
              ,redoStack: e
              ,seed: f};
    });
-   var ColorState = F4(function (a,b,c,d) {
+   var ColorState = F5(function (a,b,c,d,e) {
       return {colorSearch: a
              ,palettes: b
              ,selectedPalette: c
-             ,loading: d};
+             ,loading: d
+             ,paletteOpen: e};
    });
    var DrawingState = F4(function (a,b,c,d) {
       return {lineStart: a
@@ -11444,7 +11446,7 @@ Elm.Editor.Util.Noise.make = function (_elm) {
             A3($List.foldr,
             F2(function (z,r) {
                return A2($List._op["::"],
-               A5(calc3d,perm,permMod12,x / noiseX,y / noiseY,z * noiseZ),
+               A5(calc3d,perm,permMod12,x / noiseX,y / noiseY,z / noiseZ),
                r);
             }),
             _U.list([]),
@@ -11503,6 +11505,7 @@ Elm.Editor.Util.Pattern.make = function (_elm) {
    if (_elm.Editor.Util.Pattern.values)
    return _elm.Editor.Util.Pattern.values;
    var _U = Elm.Native.Utils.make(_elm),
+   $Array = Elm.Array.make(_elm),
    $Basics = Elm.Basics.make(_elm),
    $Debug = Elm.Debug.make(_elm),
    $Editor$Model = Elm.Editor.Model.make(_elm),
@@ -11521,39 +11524,59 @@ Elm.Editor.Util.Pattern.make = function (_elm) {
       return {x: p.x + $Basics.cos(angle) * rad
              ,y: p.y + $Basics.sin(angle) * rad};
    });
-   var calcPath = F2(function (noiseDesctruction,_p0) {
-      var _p1 = _p0;
-      var _p3 = _p1._0;
-      var _p2 = _p1._1;
-      var p2 = A2($Maybe.withDefault,
-      {x: 0,y: 0},
-      $List.head($List.reverse(_p2)));
-      var c2 = A3(randomPoint,p2,_p3,noiseDesctruction);
-      var p1 = A2($Maybe.withDefault,{x: 0,y: 0},$List.head(_p2));
-      var c1 = A3(randomPoint,p1,0 - _p3,noiseDesctruction);
-      return {p1: p1,p2: p2,c1: c1,c2: c2};
-   });
-   var calcTile = F2(function (noiseDesctruction,tile) {
-      var lines = A2($List.filter,
-      function (_p4) {
-         var _p5 = _p4;
-         return _U.cmp(_p5._0,0) > 0;
-      },
-      tile);
-      return A2($List.map,calcPath(noiseDesctruction),lines);
-   });
    var getTileLength = function (tiles) {
       return $List.length(A2($Maybe.withDefault,
       _U.list([]),
       $List.head(tiles)));
    };
-   var scalePoint = F2(function (_p6,p) {
-      var _p7 = _p6;
-      var _p8 = _p7.groupType;
-      return {x: p.x / $Editor$Util$TileSize.getTileSize(_p8) * _p7.width
-             ,y: p.y / $Editor$Util$TileSize.getTileSize(_p8) * _p7.height};
+   var scalePoint = F2(function (_p0,p) {
+      var _p1 = _p0;
+      var _p2 = _p1.groupType;
+      return {x: p.x / $Editor$Util$TileSize.getTileSize(_p2) * _p1.width
+             ,y: p.y / $Editor$Util$TileSize.getTileSize(_p2) * _p1.height};
+   });
+   var getColor = F2(function (colors,noise) {
+      var color = A2($Array.get,
+      $Basics.floor($Basics.toFloat($List.length(colors)) * $Basics.abs(noise)),
+      $Array.fromList(colors));
+      var _p3 = color;
+      if (_p3.ctor === "Just") {
+            return A2($Basics._op["++"],"#",_p3._0);
+         } else {
+            return "grey";
+         }
+   });
+   var calcPath = F3(function (noiseDesctruction,colors,_p4) {
+      var _p5 = _p4;
+      var _p7 = _p5._0;
+      var _p6 = _p5._1;
+      var color = A2(getColor,colors,_p7);
+      var p2 = A2($Maybe.withDefault,
+      {x: 0,y: 0},
+      $List.head($List.reverse(_p6)));
+      var c2 = A3(randomPoint,p2,_p7,noiseDesctruction);
+      var p1 = A2($Maybe.withDefault,{x: 0,y: 0},$List.head(_p6));
+      var c1 = A3(randomPoint,p1,0 - _p7,noiseDesctruction);
+      return {p1: p1
+             ,p2: p2
+             ,c1: c1
+             ,c2: c2
+             ,color: color
+             ,opacity: 1 - $Basics.abs(_p7)};
+   });
+   var calcTile = F3(function (noiseDesctruction,colors,tile) {
+      var lines = A2($List.filter,
+      function (_p8) {
+         var _p9 = _p8;
+         return _U.cmp($Basics.abs(_p9._0),0.2) > 0;
+      },
+      tile);
+      return A2($List.map,
+      A2(calcPath,noiseDesctruction,colors),
+      lines);
    });
    var updatePatternInModel = function (model) {
+      var colors = model.colorState.selectedPalette;
       var patternState = model.patternState;
       var group = patternState.group;
       var columns = patternState.columns;
@@ -11567,9 +11590,9 @@ Elm.Editor.Util.Pattern.make = function (_elm) {
       columns,
       tile);
       var maxZ = getTileLength(groups);
-      var _p9 = A2($Editor$Util$Noise.noise3d,model,maxZ);
-      var noise = _p9._0;
-      var seed = _p9._1;
+      var _p10 = A2($Editor$Util$Noise.noise3d,model,maxZ);
+      var noise = _p10._0;
+      var seed = _p10._1;
       var noisyGroups = A3($List.map2,
       $List.map2(F2(function (v0,v1) {
          return {ctor: "_Tuple2",_0: v0,_1: v1};
@@ -11578,13 +11601,14 @@ Elm.Editor.Util.Pattern.make = function (_elm) {
       groups);
       var noiseDesctruction = patternState.noiseDesctruction;
       var pattern = A2($List.map,
-      calcTile(noiseDesctruction),
+      A2(calcTile,noiseDesctruction,colors),
       noisyGroups);
       return _U.update(model,
       {patternState: _U.update(patternState,{pattern: pattern})
       ,seed: seed});
    };
    return _elm.Editor.Util.Pattern.values = {_op: _op
+                                            ,getColor: getColor
                                             ,scalePoint: scalePoint
                                             ,getTileLength: getTileLength
                                             ,randomPoint: randomPoint
@@ -12005,6 +12029,9 @@ Elm.Editor.Action.make = function (_elm) {
       width,
       height);
    });
+   var TogglePallete = function (a) {
+      return {ctor: "TogglePallete",_0: a};
+   };
    var SelectPalette = function (a) {
       return {ctor: "SelectPalette",_0: a};
    };
@@ -12221,11 +12248,16 @@ Elm.Editor.Action.make = function (_elm) {
                         {palettes: _U.list([]),loading: false})})
                         ,_1: $Effects.none};
               }
-         default: var model = $Editor$Util$History.addHistory(model);
+         case "SelectPalette":
+         var model = $Editor$Util$History.addHistory(model);
            return {ctor: "_Tuple2"
-                  ,_0: _U.update(model,
-                  {colorState: _U.update(colorState,{selectedPalette: _p3._0})})
-                  ,_1: $Effects.none};}
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {colorState: _U.update(colorState,{selectedPalette: _p3._0})}))
+                  ,_1: $Effects.none};
+         default: return {ctor: "_Tuple2"
+                         ,_0: _U.update(model,
+                         {colorState: _U.update(colorState,{paletteOpen: _p3._0})})
+                         ,_1: $Effects.none};}
    });
    return _elm.Editor.Action.values = {_op: _op
                                       ,NoOp: NoOp
@@ -12248,6 +12280,7 @@ Elm.Editor.Action.make = function (_elm) {
                                       ,StartColorSearch: StartColorSearch
                                       ,NewColors: NewColors
                                       ,SelectPalette: SelectPalette
+                                      ,TogglePallete: TogglePallete
                                       ,getGroup: getGroup
                                       ,getRandom: getRandom
                                       ,getRandomCoord: getRandomCoord
@@ -15825,20 +15858,21 @@ Elm.Editor.Ui.ColorFinder.make = function (_elm) {
    var palette = F2(function (address,colors) {
       return A2($Html.li,
       _U.list([$Html$Attributes.$class("preview")
-              ,A3($Html$Events.on,
-              "click",
-              $Html$Events.targetValue,
-              function (str) {
-                 return A2($Signal.message,
-                 address,
-                 $Editor$Action.SelectPalette(colors));
-              })]),
+              ,A2($Html$Events.onClick,
+              address,
+              $Editor$Action.SelectPalette(colors))]),
       A2($List.map,colorItem,colors));
    });
-   var colorList = F3(function (isLoading,palettes,address) {
+   var colorList = F4(function (isShown,
+   isLoading,
+   palettes,
+   address) {
       return isLoading ? A2($Html.ul,
       _U.list([$Html$Attributes.$class("loader")]),
-      _U.list([A2($Html.li,_U.list([]),_U.list([]))])) : A2($Html.ul,
+      _U.list([A2($Html.li,
+      _U.list([]),
+      _U.list([]))])) : isShown && _U.eq($List.length(palettes),
+      0) ? A2($Html.span,_U.list([]),_U.list([])) : A2($Html.ul,
       _U.list([]),
       A2($List.map,palette(address),palettes));
    });
@@ -15856,10 +15890,20 @@ Elm.Editor.Ui.ColorFinder.make = function (_elm) {
                          address,
                          $Editor$Action.StartColorSearch(str));
                       })
+                      ,A2($Html$Events.onBlur,
+                      address,
+                      $Editor$Action.TogglePallete(false))
+                      ,A2($Html$Events.onFocus,
+                      address,
+                      $Editor$Action.TogglePallete(true))
                       ,$Html$Attributes.type$("text")
                       ,$Html$Attributes.value(model.colorSearch)]),
               _U.list([]))
-              ,A3(colorList,model.loading,model.palettes,address)]))]));
+              ,A4(colorList,
+              model.paletteOpen,
+              model.loading,
+              model.palettes,
+              address)]))]));
    });
    return _elm.Editor.Ui.ColorFinder.values = {_op: _op
                                               ,colorItem: colorItem
@@ -15943,14 +15987,14 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
               ,$Editor$Util$Svg.pointToString(_p1.p2)]));
       return A2($Svg.path,
       _U.list([$Svg$Attributes.d(path)
+              ,$Svg$Attributes.stroke(_p1.color)
+              ,$Svg$Attributes.opacity($Basics.toString(_p1.opacity))
               ,$Svg$Attributes.fill("none")
               ,$Svg$Attributes.$class("tile")]),
       _U.list([]));
    };
    var renderTile = function (tile) {
-      return A2($Svg.g,
-      _U.list([$Svg$Attributes.stroke("grey")]),
-      A2($List.map,renderPath,tile));
+      return A2($Svg.g,_U.list([]),A2($List.map,renderPath,tile));
    };
    var renderColorizedNoisyTiles = function (tiles) {
       return A2($Svg.g,_U.list([]),A2($List.map,renderTile,tiles));

@@ -38,6 +38,7 @@ type alias ColorState =
   , palettes : List (List String)
   , selectedPalette :  List String
   , loading : Bool
+  , paletteOpen: Bool
   }
 
 type alias Model =
@@ -82,7 +83,8 @@ initialColorState =
   { colorSearch = ""
   , palettes = []
   , selectedPalette = []
-  , loading = True
+  , loading = False
+  , paletteOpen = False
   }
 
 initialModel : Model

@@ -122,7 +122,7 @@ generateGrid model z perm permMod12 =
     List.foldr (
       \x r -> List.foldr (
         \y r -> (List.foldr (
-          \z r -> (calc3d perm permMod12 (x /noiseX) (y/noiseY) (z*noiseZ)) :: r
+          \z r -> (calc3d perm permMod12 (x /noiseX) (y/noiseY) (z/noiseZ)) :: r
         ) [] [1..maxZ]) :: r
       ) r [1..maxY]
     ) [] [1..maxX]

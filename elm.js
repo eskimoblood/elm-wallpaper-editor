@@ -10072,6 +10072,287 @@ Elm.Trampoline.make = function (_elm) {
                                    ,Done: Done
                                    ,Continue: Continue};
 };
+Elm.Random = Elm.Random || {};
+Elm.Random.Array = Elm.Random.Array || {};
+Elm.Random.Array.make = function (_elm) {
+   "use strict";
+   _elm.Random = _elm.Random || {};
+   _elm.Random.Array = _elm.Random.Array || {};
+   if (_elm.Random.Array.values) return _elm.Random.Array.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Array = Elm.Array.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Random = Elm.Random.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Trampoline = Elm.Trampoline.make(_elm);
+   var _op = {};
+   var choose = F2(function (seed,arr) {
+      if ($Array.isEmpty(arr)) return {ctor: "_Tuple3"
+                                      ,_0: $Maybe.Nothing
+                                      ,_1: seed
+                                      ,_2: arr}; else {
+            var lastIndex = $Array.length(arr) - 1;
+            var intGen = A2($Random.$int,0,lastIndex);
+            var _p0 = A2($Random.generate,intGen,seed);
+            var index = _p0._0;
+            var seed$ = _p0._1;
+            var front = A3($Array.slice,0,index,arr);
+            var back = _U.eq(index,
+            lastIndex) ? $Array.empty : A3($Array.slice,
+            index + 1,
+            $Array.length(arr),
+            arr);
+            return {ctor: "_Tuple3"
+                   ,_0: A2($Array.get,index,arr)
+                   ,_1: seed$
+                   ,_2: A2($Array.append,front,back)};
+         }
+   });
+   var shuffle = F2(function (seed,arr) {
+      if ($Array.isEmpty(arr)) return {ctor: "_Tuple2"
+                                      ,_0: arr
+                                      ,_1: seed}; else {
+            var helper = function (_p1) {
+               var _p2 = _p1;
+               var _p9 = _p2._1;
+               var _p8 = _p2._0;
+               var _p7 = _p2._2;
+               var _p3 = A2(choose,_p8,_p7);
+               var m_val = _p3._0;
+               var s$ = _p3._1;
+               var a$ = _p3._2;
+               var _p4 = m_val;
+               if (_p4.ctor === "Nothing") {
+                     return $Trampoline.Done({ctor: "_Tuple3"
+                                             ,_0: _p8
+                                             ,_1: _p9
+                                             ,_2: _p7});
+                  } else {
+                     return $Trampoline.Continue(function (_p5) {
+                        var _p6 = _p5;
+                        return helper({ctor: "_Tuple3"
+                                      ,_0: s$
+                                      ,_1: A2($List._op["::"],_p4._0,_p9)
+                                      ,_2: a$});
+                     });
+                  }
+            };
+            var _p10 = $Trampoline.trampoline(helper({ctor: "_Tuple3"
+                                                     ,_0: seed
+                                                     ,_1: _U.list([])
+                                                     ,_2: arr}));
+            var seed$ = _p10._0;
+            var shuffled = _p10._1;
+            return {ctor: "_Tuple2"
+                   ,_0: $Array.fromList(shuffled)
+                   ,_1: seed$};
+         }
+   });
+   var sample = F2(function (seed,arr) {
+      var intGen = A2($Random.$int,0,$Array.length(arr) - 1);
+      var _p11 = A2($Random.generate,intGen,seed);
+      var index = _p11._0;
+      var seed$ = _p11._1;
+      return {ctor: "_Tuple2",_0: A2($Array.get,index,arr),_1: seed$};
+   });
+   return _elm.Random.Array.values = {_op: _op
+                                     ,sample: sample
+                                     ,choose: choose
+                                     ,shuffle: shuffle};
+};
+Elm.Noise = Elm.Noise || {};
+Elm.Noise.make = function (_elm) {
+   "use strict";
+   _elm.Noise = _elm.Noise || {};
+   if (_elm.Noise.values) return _elm.Noise.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Array = Elm.Array.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Bitwise = Elm.Bitwise.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Random = Elm.Random.make(_elm),
+   $Random$Array = Elm.Random.Array.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var getCornerOffset = F3(function (x,y,z) {
+      return _U.cmp(x,y) > -1 ? _U.cmp(y,z) > -1 ? {ctor: "_Tuple6"
+                                                   ,_0: 1
+                                                   ,_1: 0
+                                                   ,_2: 0
+                                                   ,_3: 1
+                                                   ,_4: 1
+                                                   ,_5: 0} : _U.cmp(x,z) > -1 ? {ctor: "_Tuple6"
+                                                                                ,_0: 1
+                                                                                ,_1: 0
+                                                                                ,_2: 0
+                                                                                ,_3: 1
+                                                                                ,_4: 0
+                                                                                ,_5: 1} : {ctor: "_Tuple6"
+                                                                                          ,_0: 0
+                                                                                          ,_1: 0
+                                                                                          ,_2: 1
+                                                                                          ,_3: 1
+                                                                                          ,_4: 0
+                                                                                          ,_5: 1} : _U.cmp(y,z) < 0 ? {ctor: "_Tuple6"
+                                                                                                                      ,_0: 0
+                                                                                                                      ,_1: 0
+                                                                                                                      ,_2: 1
+                                                                                                                      ,_3: 0
+                                                                                                                      ,_4: 1
+                                                                                                                      ,_5: 1} : _U.cmp(x,
+      z) < 0 ? {ctor: "_Tuple6"
+               ,_0: 0
+               ,_1: 1
+               ,_2: 0
+               ,_3: 0
+               ,_4: 1
+               ,_5: 1} : {ctor: "_Tuple6",_0: 0,_1: 1,_2: 0,_3: 1,_4: 1,_5: 0};
+   });
+   var grad3 = $Array.fromList(_U.list([1
+                                       ,1
+                                       ,0
+                                       ,-1
+                                       ,1
+                                       ,0
+                                       ,1
+                                       ,-1
+                                       ,0
+                                       ,-1
+                                       ,-1
+                                       ,0
+                                       ,1
+                                       ,0
+                                       ,1
+                                       ,-1
+                                       ,0
+                                       ,1
+                                       ,1
+                                       ,0
+                                       ,-1
+                                       ,-1
+                                       ,0
+                                       ,-1
+                                       ,0
+                                       ,1
+                                       ,1
+                                       ,0
+                                       ,-1
+                                       ,1
+                                       ,0
+                                       ,1
+                                       ,-1
+                                       ,0
+                                       ,-1
+                                       ,-1]));
+   var generatePermMod12 = function (perm) {
+      return A2($Array.map,
+      function (i) {
+         return A2($Basics._op["%"],i,12);
+      },
+      perm);
+   };
+   var PermutationTable = F2(function (a,b) {
+      return {perm: a,permMod12: b};
+   });
+   var reverseArray = function (array) {
+      return $Array.fromList($List.reverse($Array.toList(array)));
+   };
+   var permutationTable = function (seed) {
+      var _p0 = function (_p1) {
+         var _p2 = _p1;
+         var _p3 = _p2._0;
+         return {ctor: "_Tuple2"
+                ,_0: A2($Array.append,_p3,reverseArray(_p3))
+                ,_1: _p2._1};
+      }(A2($Random$Array.shuffle,
+      seed,
+      $Array.fromList(_U.range(0,255))));
+      var perm = _p0._0;
+      var seed$ = _p0._1;
+      return {ctor: "_Tuple2"
+             ,_0: {perm: perm,permMod12: generatePermMod12(perm)}
+             ,_1: seed};
+   };
+   var get = F2(function (arr,i) {
+      var _p4 = A2($Array.get,i,arr);
+      if (_p4.ctor === "Just") {
+            return _p4._0;
+         } else {
+            return _U.crashCase("Noise",
+            {start: {line: 44,column: 3},end: {line: 46,column: 48}},
+            _p4)("Error getting item");
+         }
+   });
+   var getN = F8(function (x,y,z,i,j,k,perm,permMod12) {
+      var t = 0.6 - x * x - y * y - z * z;
+      if (_U.cmp(t,0) < 0) return 0; else {
+            var t$ = t * t;
+            var gi = A2(get,
+            permMod12,
+            i + A2(get,perm,j + A2(get,perm,k))) * 3;
+            return t$ * t$ * (A2(get,grad3,gi) * x + A2(get,
+            grad3,
+            gi + 1) * y + A2(get,grad3,gi + 2) * z);
+         }
+   });
+   var g4 = (5 - $Basics.sqrt(5)) / 20;
+   var f4 = ($Basics.sqrt(5) - 1) / 4;
+   var g3 = 1 / 6;
+   var f3 = 1 / 3;
+   var noise3d = F4(function (_p6,xin,yin,zin) {
+      var _p7 = _p6;
+      var _p10 = _p7.permMod12;
+      var _p9 = _p7.perm;
+      var s = (xin + yin + zin) * f3;
+      var i = $Basics.floor(xin + s);
+      var ii = A2($Bitwise.and,i,255);
+      var j = $Basics.floor(yin + s);
+      var jj = A2($Bitwise.and,j,255);
+      var k = $Basics.floor(zin + s);
+      var t = $Basics.toFloat(i + j + k) * g3;
+      var x0$ = $Basics.toFloat(i) - t;
+      var x0 = xin - x0$;
+      var x3 = x0 - 1 + 3 * g3;
+      var y0$ = $Basics.toFloat(j) - t;
+      var y0 = yin - y0$;
+      var y3 = y0 - 1 + 3 * g3;
+      var z0$ = $Basics.toFloat(k) - t;
+      var z0 = zin - z0$;
+      var _p8 = A3(getCornerOffset,x0,y0,z0);
+      var i1 = _p8._0;
+      var j1 = _p8._1;
+      var k1 = _p8._2;
+      var i2 = _p8._3;
+      var j2 = _p8._4;
+      var k2 = _p8._5;
+      var x1 = x0 - $Basics.toFloat(i1) + g3;
+      var y1 = y0 - $Basics.toFloat(j1) + g3;
+      var x2 = x0 - $Basics.toFloat(i2) + 2 * g3;
+      var y2 = y0 - $Basics.toFloat(j2) + 2 * g3;
+      var z1 = z0 - $Basics.toFloat(k1) + g3;
+      var z2 = z0 - $Basics.toFloat(k2) + 2 * g3;
+      var z3 = z0 - 1 + 3 * g3;
+      var kk = A2($Bitwise.and,k,255);
+      var n0 = A8(getN,x0,y0,z0,ii,jj,kk,_p9,_p10);
+      var n1 = A8(getN,x1,y1,z1,ii + i1,jj + j1,kk + k1,_p9,_p10);
+      var n2 = A8(getN,x2,y2,z2,ii + i2,jj + j2,kk + k2,_p9,_p10);
+      var n3 = A8(getN,x3,y3,z3,ii + 1,jj + 1,kk + 1,_p9,_p10);
+      return 32 * (n0 + n1 + n2 + n3);
+   });
+   var g2 = (3 - $Basics.sqrt(3)) / 6;
+   var f2 = 0.5 * ($Basics.sqrt(3) - 1);
+   return _elm.Noise.values = {_op: _op
+                              ,permutationTable: permutationTable
+                              ,noise3d: noise3d
+                              ,PermutationTable: PermutationTable};
+};
 Elm.WallpaperGroup = Elm.WallpaperGroup || {};
 Elm.WallpaperGroup.Group = Elm.WallpaperGroup.Group || {};
 Elm.WallpaperGroup.Group.make = function (_elm) {
@@ -11146,98 +11427,6 @@ Elm.Editor.Util.TileSize.make = function (_elm) {
    return _elm.Editor.Util.TileSize.values = {_op: _op
                                              ,getTileSize: getTileSize};
 };
-Elm.Random = Elm.Random || {};
-Elm.Random.Array = Elm.Random.Array || {};
-Elm.Random.Array.make = function (_elm) {
-   "use strict";
-   _elm.Random = _elm.Random || {};
-   _elm.Random.Array = _elm.Random.Array || {};
-   if (_elm.Random.Array.values) return _elm.Random.Array.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Array = Elm.Array.make(_elm),
-   $Basics = Elm.Basics.make(_elm),
-   $Debug = Elm.Debug.make(_elm),
-   $List = Elm.List.make(_elm),
-   $Maybe = Elm.Maybe.make(_elm),
-   $Random = Elm.Random.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm),
-   $Trampoline = Elm.Trampoline.make(_elm);
-   var _op = {};
-   var choose = F2(function (seed,arr) {
-      if ($Array.isEmpty(arr)) return {ctor: "_Tuple3"
-                                      ,_0: $Maybe.Nothing
-                                      ,_1: seed
-                                      ,_2: arr}; else {
-            var lastIndex = $Array.length(arr) - 1;
-            var intGen = A2($Random.$int,0,lastIndex);
-            var _p0 = A2($Random.generate,intGen,seed);
-            var index = _p0._0;
-            var seed$ = _p0._1;
-            var front = A3($Array.slice,0,index,arr);
-            var back = _U.eq(index,
-            lastIndex) ? $Array.empty : A3($Array.slice,
-            index + 1,
-            $Array.length(arr),
-            arr);
-            return {ctor: "_Tuple3"
-                   ,_0: A2($Array.get,index,arr)
-                   ,_1: seed$
-                   ,_2: A2($Array.append,front,back)};
-         }
-   });
-   var shuffle = F2(function (seed,arr) {
-      if ($Array.isEmpty(arr)) return {ctor: "_Tuple2"
-                                      ,_0: arr
-                                      ,_1: seed}; else {
-            var helper = function (_p1) {
-               var _p2 = _p1;
-               var _p9 = _p2._1;
-               var _p8 = _p2._0;
-               var _p7 = _p2._2;
-               var _p3 = A2(choose,_p8,_p7);
-               var m_val = _p3._0;
-               var s$ = _p3._1;
-               var a$ = _p3._2;
-               var _p4 = m_val;
-               if (_p4.ctor === "Nothing") {
-                     return $Trampoline.Done({ctor: "_Tuple3"
-                                             ,_0: _p8
-                                             ,_1: _p9
-                                             ,_2: _p7});
-                  } else {
-                     return $Trampoline.Continue(function (_p5) {
-                        var _p6 = _p5;
-                        return helper({ctor: "_Tuple3"
-                                      ,_0: s$
-                                      ,_1: A2($List._op["::"],_p4._0,_p9)
-                                      ,_2: a$});
-                     });
-                  }
-            };
-            var _p10 = $Trampoline.trampoline(helper({ctor: "_Tuple3"
-                                                     ,_0: seed
-                                                     ,_1: _U.list([])
-                                                     ,_2: arr}));
-            var seed$ = _p10._0;
-            var shuffled = _p10._1;
-            return {ctor: "_Tuple2"
-                   ,_0: $Array.fromList(shuffled)
-                   ,_1: seed$};
-         }
-   });
-   var sample = F2(function (seed,arr) {
-      var intGen = A2($Random.$int,0,$Array.length(arr) - 1);
-      var _p11 = A2($Random.generate,intGen,seed);
-      var index = _p11._0;
-      var seed$ = _p11._1;
-      return {ctor: "_Tuple2",_0: A2($Array.get,index,arr),_1: seed$};
-   });
-   return _elm.Random.Array.values = {_op: _op
-                                     ,sample: sample
-                                     ,choose: choose
-                                     ,shuffle: shuffle};
-};
 Elm.Editor = Elm.Editor || {};
 Elm.Editor.Util = Elm.Editor.Util || {};
 Elm.Editor.Util.Noise = Elm.Editor.Util.Noise || {};
@@ -11249,250 +11438,53 @@ Elm.Editor.Util.Noise.make = function (_elm) {
    if (_elm.Editor.Util.Noise.values)
    return _elm.Editor.Util.Noise.values;
    var _U = Elm.Native.Utils.make(_elm),
-   $Array = Elm.Array.make(_elm),
    $Basics = Elm.Basics.make(_elm),
-   $Bitwise = Elm.Bitwise.make(_elm),
    $Debug = Elm.Debug.make(_elm),
    $Editor$Model = Elm.Editor.Model.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
+   $Noise = Elm.Noise.make(_elm),
    $Random = Elm.Random.make(_elm),
-   $Random$Array = Elm.Random.Array.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
-   var getCornerOffset = F3(function (x,y,z) {
-      return _U.cmp(x,y) > -1 ? _U.cmp(y,z) > -1 ? {ctor: "_Tuple6"
-                                                   ,_0: 1
-                                                   ,_1: 0
-                                                   ,_2: 0
-                                                   ,_3: 1
-                                                   ,_4: 1
-                                                   ,_5: 0} : _U.cmp(x,z) > -1 ? {ctor: "_Tuple6"
-                                                                                ,_0: 1
-                                                                                ,_1: 0
-                                                                                ,_2: 0
-                                                                                ,_3: 1
-                                                                                ,_4: 0
-                                                                                ,_5: 1} : {ctor: "_Tuple6"
-                                                                                          ,_0: 0
-                                                                                          ,_1: 0
-                                                                                          ,_2: 1
-                                                                                          ,_3: 1
-                                                                                          ,_4: 0
-                                                                                          ,_5: 1} : _U.cmp(y,z) < 0 ? {ctor: "_Tuple6"
-                                                                                                                      ,_0: 0
-                                                                                                                      ,_1: 0
-                                                                                                                      ,_2: 1
-                                                                                                                      ,_3: 0
-                                                                                                                      ,_4: 1
-                                                                                                                      ,_5: 1} : _U.cmp(x,
-      z) < 0 ? {ctor: "_Tuple6"
-               ,_0: 0
-               ,_1: 1
-               ,_2: 0
-               ,_3: 0
-               ,_4: 1
-               ,_5: 1} : {ctor: "_Tuple6",_0: 0,_1: 1,_2: 0,_3: 1,_4: 1,_5: 0};
-   });
-   var grad3 = $Array.fromList(_U.list([1
-                                       ,1
-                                       ,0
-                                       ,-1
-                                       ,1
-                                       ,0
-                                       ,1
-                                       ,-1
-                                       ,0
-                                       ,-1
-                                       ,-1
-                                       ,0
-                                       ,1
-                                       ,0
-                                       ,1
-                                       ,-1
-                                       ,0
-                                       ,1
-                                       ,1
-                                       ,0
-                                       ,-1
-                                       ,-1
-                                       ,0
-                                       ,-1
-                                       ,0
-                                       ,1
-                                       ,1
-                                       ,0
-                                       ,-1
-                                       ,1
-                                       ,0
-                                       ,1
-                                       ,-1
-                                       ,0
-                                       ,-1
-                                       ,-1]));
-   var generatePermMod12 = function (perm) {
-      return A2($Array.map,
-      function (i) {
-         return A2($Basics._op["%"],i,12);
-      },
-      perm);
-   };
-   var reverseArray = function (array) {
-      return $Array.fromList($List.reverse($Array.toList(array)));
-   };
-   var generatePerm = function (seed) {
-      return function (_p0) {
-         var _p1 = _p0;
-         var _p2 = _p1._0;
-         return {ctor: "_Tuple2"
-                ,_0: A2($Array.append,_p2,reverseArray(_p2))
-                ,_1: _p1._1};
-      }(A2($Random$Array.shuffle,
-      seed,
-      $Array.fromList(_U.range(0,255))));
-   };
-   var get = F2(function (arr,i) {
-      var _p3 = A2($Array.get,i,arr);
-      if (_p3.ctor === "Just") {
-            return _p3._0;
-         } else {
-            return _U.crashCase("Editor.Util.Noise",
-            {start: {line: 30,column: 3},end: {line: 32,column: 48}},
-            _p3)("Error getting item");
-         }
-   });
-   var getN = F8(function (x,y,z,i,j,k,perm,permMod12) {
-      var t = 0.6 - x * x - y * y - z * z;
-      if (_U.cmp(t,0) < 0) return 0; else {
-            var t$ = t * t;
-            var gi = A2(get,
-            permMod12,
-            i + A2(get,perm,j + A2(get,perm,k))) * 3;
-            return t$ * t$ * (A2(get,grad3,gi) * x + A2(get,
-            grad3,
-            gi + 1) * y + A2(get,grad3,gi + 2) * z);
-         }
-   });
-   var g4 = (5 - $Basics.sqrt(5)) / 20;
-   var f4 = ($Basics.sqrt(5) - 1) / 4;
-   var g3 = 1 / 6;
-   var f3 = 1 / 3;
-   var calc3d = F5(function (perm,permMod12,xin,yin,zin) {
-      var s = (xin + yin + zin) * f3;
-      var i = $Basics.floor(xin + s);
-      var ii = A2($Bitwise.and,i,255);
-      var j = $Basics.floor(yin + s);
-      var jj = A2($Bitwise.and,j,255);
-      var k = $Basics.floor(zin + s);
-      var t = $Basics.toFloat(i + j + k) * g3;
-      var x0$ = $Basics.toFloat(i) - t;
-      var x0 = xin - x0$;
-      var x3 = x0 - 1 + 3 * g3;
-      var y0$ = $Basics.toFloat(j) - t;
-      var y0 = yin - y0$;
-      var y3 = y0 - 1 + 3 * g3;
-      var z0$ = $Basics.toFloat(k) - t;
-      var z0 = zin - z0$;
-      var _p5 = A3(getCornerOffset,x0,y0,z0);
-      var i1 = _p5._0;
-      var j1 = _p5._1;
-      var k1 = _p5._2;
-      var i2 = _p5._3;
-      var j2 = _p5._4;
-      var k2 = _p5._5;
-      var x1 = x0 - $Basics.toFloat(i1) + g3;
-      var y1 = y0 - $Basics.toFloat(j1) + g3;
-      var x2 = x0 - $Basics.toFloat(i2) + 2 * g3;
-      var y2 = y0 - $Basics.toFloat(j2) + 2 * g3;
-      var z1 = z0 - $Basics.toFloat(k1) + g3;
-      var z2 = z0 - $Basics.toFloat(k2) + 2 * g3;
-      var z3 = z0 - 1 + 3 * g3;
-      var kk = A2($Bitwise.and,k,255);
-      var n0 = A8(getN,x0,y0,z0,ii,jj,kk,perm,permMod12);
-      var n1 = A8(getN,
-      x1,
-      y1,
-      z1,
-      ii + i1,
-      jj + j1,
-      kk + k1,
-      perm,
-      permMod12);
-      var n2 = A8(getN,
-      x2,
-      y2,
-      z2,
-      ii + i2,
-      jj + j2,
-      kk + k2,
-      perm,
-      permMod12);
-      var n3 = A8(getN,x3,y3,z3,ii + 1,jj + 1,kk + 1,perm,permMod12);
-      return 32 * (n0 + n1 + n2 + n3);
-   });
-   var generateGrid = F4(function (model,z,perm,permMod12) {
+   var noise = F2(function (model,z) {
+      var seed = model.seed;
       var noiseZ = $Basics.toFloat(model.patternState.noiseZ);
       var noiseY = $Basics.toFloat(model.patternState.noiseY);
       var noiseX = $Basics.toFloat(model.patternState.noiseX);
       var maxZ = $Basics.toFloat(z);
       var maxY = $Basics.toFloat(model.patternState.rows);
       var maxX = $Basics.toFloat(model.patternState.columns);
-      return A3($List.foldr,
-      F2(function (x,r) {
-         return A3($List.foldr,
-         F2(function (y,r) {
-            return A2($List._op["::"],
-            A3($List.foldr,
-            F2(function (z,r) {
-               return A2($List._op["::"],
-               A5(calc3d,perm,permMod12,x / noiseX,y / noiseY,z / noiseZ),
-               r);
-            }),
-            _U.list([]),
-            _U.range(1,maxZ)),
-            r);
-         }),
-         r,
-         _U.range(1,maxY));
-      }),
-      _U.list([]),
-      _U.range(1,maxX));
-   });
-   var noise3d = F2(function (model,z) {
-      var seed = model.seed;
-      var maxZ = $Basics.toFloat(z);
-      var maxY = $Basics.toFloat(model.patternState.rows);
-      var maxX = $Basics.toFloat(model.patternState.columns);
       if (_U.eq(maxX,0) || (_U.eq(maxY,0) || _U.eq(maxZ,0)))
       return {ctor: "_Tuple2",_0: _U.list([]),_1: seed}; else {
-            var _p6 = generatePerm(seed);
-            var perm = _p6._0;
-            var newSeed = _p6._1;
-            var permMod12 = generatePermMod12(perm);
-            var list = A4(generateGrid,model,z,perm,permMod12);
+            var _p0 = $Noise.permutationTable(model.seed);
+            var perm = _p0._0;
+            var newSeed = _p0._1;
+            var list = A3($List.foldr,
+            F2(function (x,r) {
+               return A3($List.foldr,
+               F2(function (y,r) {
+                  return A2($List._op["::"],
+                  A3($List.foldr,
+                  F2(function (z,r) {
+                     return A2($List._op["::"],
+                     A4($Noise.noise3d,perm,x / noiseX,y / noiseY,z / noiseZ),
+                     r);
+                  }),
+                  _U.list([]),
+                  _U.range(1,maxZ)),
+                  r);
+               }),
+               r,
+               _U.range(1,maxY));
+            }),
+            _U.list([]),
+            _U.range(1,maxX));
             return {ctor: "_Tuple2",_0: list,_1: newSeed};
          }
    });
-   var g2 = (3 - $Basics.sqrt(3)) / 6;
-   var f2 = 0.5 * ($Basics.sqrt(3) - 1);
-   return _elm.Editor.Util.Noise.values = {_op: _op
-                                          ,f2: f2
-                                          ,g2: g2
-                                          ,f3: f3
-                                          ,g3: g3
-                                          ,f4: f4
-                                          ,g4: g4
-                                          ,get: get
-                                          ,reverseArray: reverseArray
-                                          ,generatePerm: generatePerm
-                                          ,generatePermMod12: generatePermMod12
-                                          ,grad3: grad3
-                                          ,getCornerOffset: getCornerOffset
-                                          ,getN: getN
-                                          ,noise3d: noise3d
-                                          ,generateGrid: generateGrid
-                                          ,calc3d: calc3d};
+   return _elm.Editor.Util.Noise.values = {_op: _op,noise: noise};
 };
 Elm.Editor = Elm.Editor || {};
 Elm.Editor.Util = Elm.Editor.Util || {};
@@ -11590,7 +11582,7 @@ Elm.Editor.Util.Pattern.make = function (_elm) {
       columns,
       tile);
       var maxZ = getTileLength(groups);
-      var _p10 = A2($Editor$Util$Noise.noise3d,model,maxZ);
+      var _p10 = A2($Editor$Util$Noise.noise,model,maxZ);
       var noise = _p10._0;
       var seed = _p10._1;
       var noisyGroups = A3($List.map2,

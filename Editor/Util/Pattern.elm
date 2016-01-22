@@ -1,6 +1,6 @@
 module Editor.Util.Pattern where
 
-import Editor.Util.Noise exposing (noise3d)
+import Editor.Util.Noise as Noise
 import Editor.Util.TileSize exposing (..)
 import Editor.Types exposing (Tile, Point, MultiLine, Bezier)
 import Editor.Model exposing (Model)
@@ -69,7 +69,7 @@ updatePatternInModel  model =
     tile = List.map (List.map (scalePoint patternState)) patternState.tile
     groups = Pattern.pattern group rows columns tile
     maxZ = getTileLength groups
-    (noise, seed) =  (noise3d model maxZ)
+    (noise, seed) =  (Noise.noise model maxZ)
     noisyGroups = (List.map2 (List.map2 (,)) noise groups)
     noiseDesctruction = patternState.noiseDesctruction
     colors = model.colorState.selectedPalette

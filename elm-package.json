@@ -12,6 +12,7 @@
     "dependencies": {
         "Apanatshka/elm-signal-extra": "5.7.0 <= v < 6.0.0",
         "elm-lang/core": "3.0.0 <= v < 4.0.0",
+        "eskimoblood/elm-color-extra": "2.0.0 <= v < 3.0.0",
         "eskimoblood/elm-simplex-noise": "1.0.0 <= v < 2.0.0",
         "eskimoblood/elm-wallpaper": "2.0.0 <= v < 3.0.0",
         "evancz/elm-effects": "2.0.1 <= v < 3.0.0",

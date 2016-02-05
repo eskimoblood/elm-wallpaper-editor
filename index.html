@@ -28,7 +28,8 @@
         url: "http://www.colourlovers.com/api/palettes",
         data: {
           format: 'json',
-          keywords: query
+          keywords: query,
+          numResults: 100
         },
         callbackName: 'jsonCallback',
         success: function(data) {

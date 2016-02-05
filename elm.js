@@ -10181,7 +10181,10 @@ Elm.Noise.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
-   var getCornerOffset = F3(function (x,y,z) {
+   var PermutationTable = F2(function (a,b) {
+      return {perm: a,permMod12: b};
+   });
+   var getCornerOffset3d = F3(function (x,y,z) {
       return _U.cmp(x,y) > -1 ? _U.cmp(y,z) > -1 ? {ctor: "_Tuple6"
                                                    ,_0: 1
                                                    ,_1: 0
@@ -10215,6 +10218,145 @@ Elm.Noise.make = function (_elm) {
                ,_4: 1
                ,_5: 1} : {ctor: "_Tuple6",_0: 0,_1: 1,_2: 0,_3: 1,_4: 1,_5: 0};
    });
+   var getCornerOffset2d = F2(function (x,y) {
+      return _U.cmp(x,y) > 0 ? {ctor: "_Tuple2"
+                               ,_0: 1
+                               ,_1: 0} : {ctor: "_Tuple2",_0: 0,_1: 1};
+   });
+   var addUp = function (bs) {
+      return A3($List.foldl,
+      F2(function (b,i) {    return b ? i + 1 : i;}),
+      0,
+      bs);
+   };
+   var grad4 = $Array.fromList(_U.list([0
+                                       ,1
+                                       ,1
+                                       ,1
+                                       ,0
+                                       ,1
+                                       ,1
+                                       ,-1
+                                       ,0
+                                       ,1
+                                       ,-1
+                                       ,1
+                                       ,0
+                                       ,1
+                                       ,-1
+                                       ,-1
+                                       ,0
+                                       ,-1
+                                       ,1
+                                       ,1
+                                       ,0
+                                       ,-1
+                                       ,1
+                                       ,-1
+                                       ,0
+                                       ,-1
+                                       ,-1
+                                       ,1
+                                       ,0
+                                       ,-1
+                                       ,-1
+                                       ,-1
+                                       ,1
+                                       ,0
+                                       ,1
+                                       ,1
+                                       ,1
+                                       ,0
+                                       ,1
+                                       ,-1
+                                       ,1
+                                       ,0
+                                       ,-1
+                                       ,1
+                                       ,1
+                                       ,0
+                                       ,-1
+                                       ,-1
+                                       ,-1
+                                       ,0
+                                       ,1
+                                       ,1
+                                       ,-1
+                                       ,0
+                                       ,1
+                                       ,-1
+                                       ,-1
+                                       ,0
+                                       ,-1
+                                       ,1
+                                       ,-1
+                                       ,0
+                                       ,-1
+                                       ,-1
+                                       ,1
+                                       ,1
+                                       ,0
+                                       ,1
+                                       ,1
+                                       ,1
+                                       ,0
+                                       ,-1
+                                       ,1
+                                       ,-1
+                                       ,0
+                                       ,1
+                                       ,1
+                                       ,-1
+                                       ,0
+                                       ,-1
+                                       ,-1
+                                       ,1
+                                       ,0
+                                       ,1
+                                       ,-1
+                                       ,1
+                                       ,0
+                                       ,-1
+                                       ,-1
+                                       ,-1
+                                       ,0
+                                       ,1
+                                       ,-1
+                                       ,-1
+                                       ,0
+                                       ,-1
+                                       ,1
+                                       ,1
+                                       ,1
+                                       ,0
+                                       ,1
+                                       ,1
+                                       ,-1
+                                       ,0
+                                       ,1
+                                       ,-1
+                                       ,1
+                                       ,0
+                                       ,1
+                                       ,-1
+                                       ,-1
+                                       ,0
+                                       ,-1
+                                       ,1
+                                       ,1
+                                       ,0
+                                       ,-1
+                                       ,1
+                                       ,-1
+                                       ,0
+                                       ,-1
+                                       ,-1
+                                       ,1
+                                       ,0
+                                       ,-1
+                                       ,-1
+                                       ,-1
+                                       ,0]));
    var grad3 = $Array.fromList(_U.list([1
                                        ,1
                                        ,0
@@ -10258,9 +10400,6 @@ Elm.Noise.make = function (_elm) {
       },
       perm);
    };
-   var PermutationTable = F2(function (a,b) {
-      return {perm: a,permMod12: b};
-   });
    var reverseArray = function (array) {
       return $Array.fromList($List.reverse($Array.toList(array)));
    };
@@ -10286,11 +10425,21 @@ Elm.Noise.make = function (_elm) {
             return _p4._0;
          } else {
             return _U.crashCase("Noise",
-            {start: {line: 44,column: 3},end: {line: 46,column: 48}},
+            {start: {line: 51,column: 3},end: {line: 53,column: 48}},
             _p4)("Error getting item");
          }
    });
-   var getN = F8(function (x,y,z,i,j,k,perm,permMod12) {
+   var getN2d = F6(function (x,y,i,j,perm,permMod12) {
+      var t = 0.5 - x * x - y * y;
+      if (_U.cmp(t,0) < 0) return 0; else {
+            var t$ = t * t;
+            var gi = A2(get,permMod12,i + A2(get,perm,j)) * 3;
+            return t$ * t$ * (A2(get,grad3,gi) * x + A2(get,
+            grad3,
+            gi + 1) * y);
+         }
+   });
+   var getN3d = F8(function (x,y,z,i,j,k,perm,permMod12) {
       var t = 0.6 - x * x - y * y - z * z;
       if (_U.cmp(t,0) < 0) return 0; else {
             var t$ = t * t;
@@ -10302,14 +10451,117 @@ Elm.Noise.make = function (_elm) {
             gi + 1) * y + A2(get,grad3,gi + 2) * z);
          }
    });
+   var getN4d = function (x) {
+      return function (y) {
+         return function (z) {
+            return function (w) {
+               return function (i) {
+                  return function (j) {
+                     return function (k) {
+                        return function (l) {
+                           return function (perm) {
+                              return function (permMod12) {
+                                 var t = 0.6 - x * x - y * y - z * z - w * w;
+                                 if (_U.cmp(t,0) < 0) return 0; else {
+                                       var t$ = t * t;
+                                       var gi = A2($Basics._op["%"],
+                                       A2(get,perm,i) + (A2(get,perm,j) + (A2(get,perm,k) + A2(get,
+                                       perm,
+                                       l))),
+                                       32) * 4;
+                                       return t$ * t$ * (A2(get,grad4,gi) * x + A2(get,
+                                       grad4,
+                                       gi + 1) * y + A2(get,grad4,gi + 2) * z + A2(get,
+                                       grad4,
+                                       gi + 3) * w);
+                                    }
+                              };
+                           };
+                        };
+                     };
+                  };
+               };
+            };
+         };
+      };
+   };
    var g4 = (5 - $Basics.sqrt(5)) / 20;
    var f4 = ($Basics.sqrt(5) - 1) / 4;
+   var noise4d = F5(function (_p6,x,y,z,w) {
+      var _p7 = _p6;
+      var _p9 = _p7.permMod12;
+      var _p8 = _p7.perm;
+      var s = (x + y + z + w) * f4;
+      var i = $Basics.floor(x + s);
+      var ii = A2($Bitwise.and,i,255);
+      var j = $Basics.floor(y + s);
+      var jj = A2($Bitwise.and,j,255);
+      var k = $Basics.floor(z + s);
+      var kk = A2($Bitwise.and,k,255);
+      var l = $Basics.floor(w + s);
+      var t = $Basics.toFloat(i + j + k + l) * g4;
+      var x0$ = $Basics.toFloat(i) - t;
+      var x0 = x - x0$;
+      var x4 = x0 - 1 + 4 * g4;
+      var y0$ = $Basics.toFloat(j) - t;
+      var y0 = y - y0$;
+      var y4 = y0 - 1 + 4 * g4;
+      var z0$ = $Basics.toFloat(k) - t;
+      var z0 = z - z0$;
+      var ranky = addUp(_U.list([_U.cmp(x0,y0) < 1
+                                ,_U.cmp(y0,z0) > 0
+                                ,_U.cmp(y0,z0) > 0]));
+      var j1 = _U.cmp(ranky,3) > -1 ? 1 : 0;
+      var y1 = y0 - j1 + g4;
+      var j2 = _U.cmp(ranky,2) > -1 ? 1 : 0;
+      var y2 = y0 - j2 + 2 * g4;
+      var j3 = _U.cmp(ranky,1) > -1 ? 1 : 0;
+      var y3 = y0 - j3 + 3 * g4;
+      var z4 = z0 - 1 + 4 * g4;
+      var w0$ = $Basics.toFloat(l) - t;
+      var w0 = w - w0$;
+      var rankx = addUp(_U.list([_U.cmp(x0,y0) > 0
+                                ,_U.cmp(x0,z0) > 0
+                                ,_U.cmp(x0,w0) > 0]));
+      var i1 = _U.cmp(rankx,3) > -1 ? 1 : 0;
+      var x1 = x0 - i1 + g4;
+      var i2 = _U.cmp(rankx,2) > -1 ? 1 : 0;
+      var x2 = x0 - i2 + 2 * g4;
+      var i3 = _U.cmp(rankx,1) > -1 ? 1 : 0;
+      var x3 = x0 - i3 + 3 * g4;
+      var rankz = addUp(_U.list([_U.cmp(x0,z0) < 1
+                                ,_U.cmp(y0,z0) < 1
+                                ,_U.cmp(z0,w0) > 0]));
+      var k1 = _U.cmp(rankz,3) > -1 ? 1 : 0;
+      var z1 = z0 - k1 + g4;
+      var k2 = _U.cmp(rankz,2) > -1 ? 1 : 0;
+      var z2 = z0 - k2 + 2 * g4;
+      var k3 = _U.cmp(rankz,1) > -1 ? 1 : 0;
+      var z3 = z0 - k3 + 3 * g4;
+      var rankw = addUp(_U.list([_U.cmp(x0,w0) < 1
+                                ,_U.cmp(y0,w0) < 1
+                                ,_U.cmp(z0,w0) < 1]));
+      var l1 = _U.cmp(rankw,3) > -1 ? 1 : 0;
+      var l2 = _U.cmp(rankw,2) > -1 ? 1 : 0;
+      var l3 = _U.cmp(rankw,1) > -1 ? 1 : 0;
+      var w1 = w0 - l1 + g4;
+      var w2 = w0 - l2 + 2 * g4;
+      var w3 = w0 - l3 + 3 * g4;
+      var w4 = w0 - 1 + 4 * g4;
+      var ll = A2($Bitwise.and,l,255);
+      var n0 = getN4d(x0)(y0)(z0)(w0)(ii)(jj)(kk)(ll)(_p8)(_p9);
+      var n1 = getN4d(x1)(y1)(z1)(w1)(ii + i1)(jj + j1)(kk + k1)(ll + l1)(_p8)(_p9);
+      var n2 = getN4d(x2)(y2)(z2)(w2)(ii + i2)(jj + j2)(kk + k2)(ll + l2)(_p8)(_p9);
+      var n3 = getN4d(x3)(y3)(z3)(w3)(ii + i3)(jj + j3)(kk + k3)(ll + l3)(_p8)(_p9);
+      var n4 = getN4d(x4)(y4)(z4)(w4)(ii + 1)(jj + 1)(kk + 1)(ll + 1)(_p8)(_p9);
+      return 27 * (n0 + n1 + n2 + n3 + n4);
+   });
    var g3 = 1 / 6;
    var f3 = 1 / 3;
-   var noise3d = F4(function (_p6,xin,yin,zin) {
-      var _p7 = _p6;
-      var _p10 = _p7.permMod12;
-      var _p9 = _p7.perm;
+   var noise3d = F4(function (_p10,xin,yin,zin) {
+      var _p11 = _p10;
+      var _p14 = _p11.permMod12;
+      var _p13 = _p11.perm;
       var s = (xin + yin + zin) * f3;
       var i = $Basics.floor(xin + s);
       var ii = A2($Bitwise.and,i,255);
@@ -10325,13 +10577,13 @@ Elm.Noise.make = function (_elm) {
       var y3 = y0 - 1 + 3 * g3;
       var z0$ = $Basics.toFloat(k) - t;
       var z0 = zin - z0$;
-      var _p8 = A3(getCornerOffset,x0,y0,z0);
-      var i1 = _p8._0;
-      var j1 = _p8._1;
-      var k1 = _p8._2;
-      var i2 = _p8._3;
-      var j2 = _p8._4;
-      var k2 = _p8._5;
+      var _p12 = A3(getCornerOffset3d,x0,y0,z0);
+      var i1 = _p12._0;
+      var j1 = _p12._1;
+      var k1 = _p12._2;
+      var i2 = _p12._3;
+      var j2 = _p12._4;
+      var k2 = _p12._5;
       var x1 = x0 - $Basics.toFloat(i1) + g3;
       var y1 = y0 - $Basics.toFloat(j1) + g3;
       var x2 = x0 - $Basics.toFloat(i2) + 2 * g3;
@@ -10340,17 +10592,45 @@ Elm.Noise.make = function (_elm) {
       var z2 = z0 - $Basics.toFloat(k2) + 2 * g3;
       var z3 = z0 - 1 + 3 * g3;
       var kk = A2($Bitwise.and,k,255);
-      var n0 = A8(getN,x0,y0,z0,ii,jj,kk,_p9,_p10);
-      var n1 = A8(getN,x1,y1,z1,ii + i1,jj + j1,kk + k1,_p9,_p10);
-      var n2 = A8(getN,x2,y2,z2,ii + i2,jj + j2,kk + k2,_p9,_p10);
-      var n3 = A8(getN,x3,y3,z3,ii + 1,jj + 1,kk + 1,_p9,_p10);
+      var n0 = A8(getN3d,x0,y0,z0,ii,jj,kk,_p13,_p14);
+      var n1 = A8(getN3d,x1,y1,z1,ii + i1,jj + j1,kk + k1,_p13,_p14);
+      var n2 = A8(getN3d,x2,y2,z2,ii + i2,jj + j2,kk + k2,_p13,_p14);
+      var n3 = A8(getN3d,x3,y3,z3,ii + 1,jj + 1,kk + 1,_p13,_p14);
       return 32 * (n0 + n1 + n2 + n3);
    });
    var g2 = (3 - $Basics.sqrt(3)) / 6;
    var f2 = 0.5 * ($Basics.sqrt(3) - 1);
+   var noise2d = F3(function (_p15,xin,yin) {
+      var _p16 = _p15;
+      var _p19 = _p16.permMod12;
+      var _p18 = _p16.perm;
+      var s = (xin + yin) * f2;
+      var i = $Basics.floor(xin + s);
+      var ii = A2($Bitwise.and,i,255);
+      var j = $Basics.floor(yin + s);
+      var t = $Basics.toFloat(i + j) * g2;
+      var x0$ = $Basics.toFloat(i) - t;
+      var x0 = xin - x0$;
+      var x2 = x0 - 1 + 2 * g2;
+      var y0$ = $Basics.toFloat(j) - t;
+      var y0 = yin - y0$;
+      var _p17 = A2(getCornerOffset2d,x0,y0);
+      var i1 = _p17._0;
+      var j1 = _p17._1;
+      var x1 = x0 - $Basics.toFloat(i1) + g2;
+      var y1 = y0 - $Basics.toFloat(j1) + g2;
+      var y2 = y0 - 1 + 2 * g2;
+      var jj = A2($Bitwise.and,j,255);
+      var n0 = A6(getN2d,x0,y0,ii,jj,_p18,_p19);
+      var n1 = A6(getN2d,x1,y1,ii + i1,jj + j1,_p18,_p19);
+      var n2 = A6(getN2d,x2,y2,ii + 1,jj + 1,_p18,_p19);
+      return 70 * (n0 + n1 + n2);
+   });
    return _elm.Noise.values = {_op: _op
                               ,permutationTable: permutationTable
+                              ,noise4d: noise4d
                               ,noise3d: noise3d
+                              ,noise2d: noise2d
                               ,PermutationTable: PermutationTable};
 };
 Elm.WallpaperGroup = Elm.WallpaperGroup || {};

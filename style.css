@@ -11,6 +11,9 @@ button {
   padding: 4px 10px;
   outline: none
 }
+button:disabled {
+  opacity: .5;
+}
 .row {
   display: flex;
   height: 100%;

@@ -31,7 +31,10 @@ view address model =
             [ div
                 [ Attr.class "sidebar"
                 ]
-                [ slider
+                [ groupSelect patternState.groupType address
+                , colorFinder address model.colorState
+                , raster drawingState patternState.tile patternState.previewGroup patternState.boundingBox address
+                , slider
                     { value = (toString patternState.rasterSize)
                     , min = "1"
                     , max = "20"
@@ -80,8 +83,6 @@ view address model =
                     , address = address
                     , createAction = \str -> NoiseDesctruction (Convert.toInt str)
                     }
-                , groupSelect patternState.groupType address
-                , raster drawingState patternState.tile patternState.previewGroup patternState.boundingBox address
                 , button
                     [ on "click" targetValue (\_ -> Signal.message address ClearTiles)
                     ]
@@ -104,10 +105,9 @@ view address model =
                     ]
                     [ Html.text "Redo"
                     ]
-                , colorFinder address model.colorState
                 ]
             , div
-                [ Attr.class "main lalasd"
+                [ Attr.class "main"
                 ]
                 [ stage model.patternState.pattern
                 ]

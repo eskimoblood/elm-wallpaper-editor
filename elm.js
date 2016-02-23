@@ -10072,6 +10072,548 @@ Elm.Trampoline.make = function (_elm) {
                                    ,Done: Done
                                    ,Continue: Continue};
 };
+Elm.ParseInt = Elm.ParseInt || {};
+Elm.ParseInt.make = function (_elm) {
+   "use strict";
+   _elm.ParseInt = _elm.ParseInt || {};
+   if (_elm.ParseInt.values) return _elm.ParseInt.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Char = Elm.Char.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $String = Elm.String.make(_elm);
+   var _op = {};
+   var charFromInt = function (i) {
+      return _U.cmp(i,
+      10) < 0 ? $Char.fromCode(i + $Char.toCode(_U.chr("0"))) : _U.cmp(i,
+      36) < 0 ? $Char.fromCode(i - 10 + $Char.toCode(_U.chr("A"))) : _U.crash("ParseInt",
+      {start: {line: 141,column: 5}
+      ,end: {line: 141,column: 16}})($Basics.toString(i));
+   };
+   var toRadix$ = F2(function (radix,i) {
+      return _U.cmp(i,
+      radix) < 0 ? $String.fromChar(charFromInt(i)) : A2($Basics._op["++"],
+      A2(toRadix$,radix,i / radix | 0),
+      $String.fromChar(charFromInt(A2($Basics._op["%"],i,radix))));
+   });
+   var isBetween = F3(function (lower,upper,c) {
+      var ci = $Char.toCode(c);
+      return _U.cmp($Char.toCode(lower),ci) < 1 && _U.cmp(ci,
+      $Char.toCode(upper)) < 1;
+   });
+   var charOffset = F2(function (basis,c) {
+      return $Char.toCode(c) - $Char.toCode(basis);
+   });
+   var InvalidRadix = function (a) {
+      return {ctor: "InvalidRadix",_0: a};
+   };
+   var toRadix = F2(function (radix,i) {
+      return _U.cmp(2,radix) < 1 && _U.cmp(radix,
+      36) < 1 ? _U.cmp(i,0) < 0 ? $Result.Ok(A2($Basics._op["++"],
+      "-",
+      A2(toRadix$,radix,0 - i))) : $Result.Ok(A2(toRadix$,
+      radix,
+      i)) : $Result.Err(InvalidRadix(radix));
+   });
+   var OutOfRange = function (a) {
+      return {ctor: "OutOfRange",_0: a};
+   };
+   var InvalidChar = function (a) {
+      return {ctor: "InvalidChar",_0: a};
+   };
+   var intFromChar = F2(function (radix,c) {
+      var validInt = function (i) {
+         return _U.cmp(i,
+         radix) < 0 ? $Result.Ok(i) : $Result.Err(OutOfRange(c));
+      };
+      var toInt = A3(isBetween,
+      _U.chr("0"),
+      _U.chr("9"),
+      c) ? $Result.Ok(A2(charOffset,_U.chr("0"),c)) : A3(isBetween,
+      _U.chr("a"),
+      _U.chr("z"),
+      c) ? $Result.Ok(10 + A2(charOffset,
+      _U.chr("a"),
+      c)) : A3(isBetween,
+      _U.chr("A"),
+      _U.chr("Z"),
+      c) ? $Result.Ok(10 + A2(charOffset,
+      _U.chr("A"),
+      c)) : $Result.Err(InvalidChar(c));
+      return A2($Result.andThen,toInt,validInt);
+   });
+   var parseIntR = F2(function (radix,rstring) {
+      var _p0 = $String.uncons(rstring);
+      if (_p0.ctor === "Nothing") {
+            return $Result.Ok(0);
+         } else {
+            return A2($Result.andThen,
+            A2(intFromChar,radix,_p0._0._0),
+            function (ci) {
+               return A2($Result.andThen,
+               A2(parseIntR,radix,_p0._0._1),
+               function (ri) {
+                  return $Result.Ok(ci + ri * radix);
+               });
+            });
+         }
+   });
+   var parseIntRadix = F2(function (radix,string) {
+      return _U.cmp(2,radix) < 1 && _U.cmp(radix,
+      36) < 1 ? A2(parseIntR,
+      radix,
+      $String.reverse(string)) : $Result.Err(InvalidRadix(radix));
+   });
+   var parseInt = parseIntRadix(10);
+   var parseIntOct = parseIntRadix(8);
+   var parseIntHex = parseIntRadix(16);
+   return _elm.ParseInt.values = {_op: _op
+                                 ,parseInt: parseInt
+                                 ,parseIntOct: parseIntOct
+                                 ,parseIntHex: parseIntHex
+                                 ,parseIntRadix: parseIntRadix
+                                 ,toRadix: toRadix
+                                 ,toRadix$: toRadix$
+                                 ,InvalidChar: InvalidChar
+                                 ,OutOfRange: OutOfRange
+                                 ,InvalidRadix: InvalidRadix};
+};
+Elm.Color = Elm.Color || {};
+Elm.Color.Convert = Elm.Color.Convert || {};
+Elm.Color.Convert.make = function (_elm) {
+   "use strict";
+   _elm.Color = _elm.Color || {};
+   _elm.Color.Convert = _elm.Color.Convert || {};
+   if (_elm.Color.Convert.values) return _elm.Color.Convert.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Array = Elm.Array.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Char = Elm.Char.make(_elm),
+   $Color = Elm.Color.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $ParseInt = Elm.ParseInt.make(_elm),
+   $Regex = Elm.Regex.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $String = Elm.String.make(_elm);
+   var _op = {};
+   var xyzToColor = function (_p0) {
+      var _p1 = _p0;
+      var c = function (ch) {
+         return _U.cmp(ch,3.1308e-3) > 0 ? 1.055 * Math.pow(ch,
+         1 / 2.4) - 5.5e-2 : 12.92 * ch;
+      };
+      var z$ = _p1.z / 100;
+      var y$ = _p1.y / 100;
+      var x$ = _p1.x / 100;
+      return A3($Color.rgb,
+      $Basics.round(c(x$ * 3.2404542 + y$ * -1.5371385 + z$ * -0.4986) * 255),
+      $Basics.round(c(x$ * -0.969266 + y$ * 1.8760108 + z$ * 4.1556e-2) * 255),
+      $Basics.round(c(x$ * 5.56434e-2 + y$ * 0.2040259 + z$ * 1.0572252) * 255));
+   };
+   var labToXyz = function (_p2) {
+      var _p3 = _p2;
+      var y = (_p3.l + 16) / 116;
+      var c = function (ch) {
+         var ch$ = ch * ch * ch;
+         return _U.cmp(ch$,8.856e-3) > 0 ? ch$ : (ch - 16 / 116) / 7.787;
+      };
+      return {y: c(y) * 100
+             ,x: c(y + _p3.a / 500) * 95.047
+             ,z: c(y - _p3.b / 200) * 108.883};
+   };
+   var labToColor = function (lab) {
+      return xyzToColor(labToXyz(lab));
+   };
+   var xyzToLab = function (_p4) {
+      var _p5 = _p4;
+      var c = function (ch) {
+         return _U.cmp(ch,8.856e-3) > 0 ? Math.pow(ch,
+         1 / 3) : 7.787 * ch + 16 / 116;
+      };
+      var x$ = c(_p5.x / 95.047);
+      var y$ = c(_p5.y / 100);
+      var z$ = c(_p5.z / 108.883);
+      return {l: 116 * y$ - 16,a: 500 * (x$ - y$),b: 200 * (y$ - z$)};
+   };
+   var colorToXyz = function (cl) {
+      var _p6 = $Color.toRgb(cl);
+      var red = _p6.red;
+      var green = _p6.green;
+      var blue = _p6.blue;
+      var c = function (ch) {
+         var ch$ = $Basics.toFloat(ch) / 255;
+         var ch$$ = _U.cmp(ch$,
+         4.045e-2) > 0 ? Math.pow((ch$ + 5.5e-2) / 1.055,
+         2.4) : ch$ / 12.92;
+         return ch$$ * 100;
+      };
+      var r = c(red);
+      var g = c(green);
+      var b = c(blue);
+      return {x: r * 0.4124 + g * 0.3576 + b * 0.1805
+             ,y: r * 0.2126 + g * 0.7152 + b * 7.22e-2
+             ,z: r * 1.93e-2 + g * 0.1192 + b * 0.9505};
+   };
+   var colorToLab = function (cl) {
+      return xyzToLab(colorToXyz(cl));
+   };
+   var toRadix = function (n) {
+      var getChr = function (c) {
+         return _U.cmp(c,
+         10) < 0 ? $Basics.toString(c) : $String.fromChar($Char.fromCode(87 + c));
+      };
+      return _U.cmp(n,16) < 0 ? getChr(n) : A2($Basics._op["++"],
+      toRadix(n / 16 | 0),
+      getChr(A2($Basics._op["%"],n,16)));
+   };
+   var toHex = function (n) {
+      var hex = toRadix(n);
+      return _U.eq($String.length(hex),1) ? A2($Basics._op["++"],
+      "0",
+      hex) : hex;
+   };
+   var colorToHex = function (cl) {
+      var _p7 = $Color.toRgb(cl);
+      var red = _p7.red;
+      var green = _p7.green;
+      var blue = _p7.blue;
+      var alpha = _p7.alpha;
+      return A2($Basics._op["++"],
+      "#",
+      A2($Basics._op["++"],
+      toHex(red),
+      A2($Basics._op["++"],toHex(green),toHex(blue))));
+   };
+   var hexToColor = function (c) {
+      var r = $List.head(A2($List.map,
+      function (_) {
+         return _.submatches;
+      },
+      A3($Regex.find,
+      $Regex.All,
+      $Regex.regex("^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$"),
+      $String.toLower(c))));
+      var _p8 = r;
+      if (_p8.ctor === "Just") {
+            var v = $Array.fromList(A2($List.filterMap,
+            $Basics.identity,
+            A2($List.map,
+            $Result.toMaybe,
+            A2($List.map,
+            $ParseInt.parseIntHex,
+            A2($List.filterMap,$Basics.identity,_p8._0)))));
+            var r = A2($Array.get,0,v);
+            var g = A2($Array.get,1,v);
+            var b = A2($Array.get,2,v);
+            var _p9 = r;
+            if (_p9.ctor === "Just") {
+                  var _p10 = g;
+                  if (_p10.ctor === "Just") {
+                        var _p11 = b;
+                        if (_p11.ctor === "Just") {
+                              return $Maybe.Just(A3($Color.rgb,_p9._0,_p10._0,_p11._0));
+                           } else {
+                              return $Maybe.Nothing;
+                           }
+                     } else {
+                        return $Maybe.Nothing;
+                     }
+               } else {
+                  return $Maybe.Nothing;
+               }
+         } else {
+            return $Maybe.Nothing;
+         }
+   };
+   var cssColorString = F2(function (kind,values) {
+      return A2($Basics._op["++"],
+      kind,
+      A2($Basics._op["++"],
+      "(",
+      A2($Basics._op["++"],A2($String.join,", ",values),")")));
+   });
+   var toPercentString = function (h) {
+      return A2($Basics._op["++"],
+      $Basics.toString($Basics.round(h * 100)),
+      "%");
+   };
+   var hueToString = function (h) {
+      return $Basics.toString($Basics.round(h * 180 / $Basics.pi));
+   };
+   var colorToCssHsla = function (cl) {
+      var _p12 = $Color.toHsl(cl);
+      var hue = _p12.hue;
+      var saturation = _p12.saturation;
+      var lightness = _p12.lightness;
+      var alpha = _p12.alpha;
+      return A2(cssColorString,
+      "hsla",
+      _U.list([hueToString(hue)
+              ,toPercentString(saturation)
+              ,toPercentString(lightness)
+              ,$Basics.toString(alpha)]));
+   };
+   var colorToCssHsl = function (cl) {
+      var _p13 = $Color.toHsl(cl);
+      var hue = _p13.hue;
+      var saturation = _p13.saturation;
+      var lightness = _p13.lightness;
+      var alpha = _p13.alpha;
+      return A2(cssColorString,
+      "hsl",
+      _U.list([hueToString(hue)
+              ,toPercentString(saturation)
+              ,toPercentString(lightness)]));
+   };
+   var colorToCssRgba = function (cl) {
+      var _p14 = $Color.toRgb(cl);
+      var red = _p14.red;
+      var green = _p14.green;
+      var blue = _p14.blue;
+      var alpha = _p14.alpha;
+      return A2(cssColorString,
+      "rgba",
+      _U.list([$Basics.toString(red)
+              ,$Basics.toString(green)
+              ,$Basics.toString(blue)
+              ,$Basics.toString(alpha)]));
+   };
+   var colorToCssRgb = function (cl) {
+      var _p15 = $Color.toRgb(cl);
+      var red = _p15.red;
+      var green = _p15.green;
+      var blue = _p15.blue;
+      var alpha = _p15.alpha;
+      return A2(cssColorString,
+      "rgb",
+      _U.list([$Basics.toString(red)
+              ,$Basics.toString(green)
+              ,$Basics.toString(blue)]));
+   };
+   var Lab = F3(function (a,b,c) {    return {l: a,a: b,b: c};});
+   var XYZ = F3(function (a,b,c) {    return {x: a,y: b,z: c};});
+   return _elm.Color.Convert.values = {_op: _op
+                                      ,colorToCssRgb: colorToCssRgb
+                                      ,colorToCssRgba: colorToCssRgba
+                                      ,colorToCssHsl: colorToCssHsl
+                                      ,colorToCssHsla: colorToCssHsla
+                                      ,colorToHex: colorToHex
+                                      ,hexToColor: hexToColor
+                                      ,colorToLab: colorToLab
+                                      ,labToColor: labToColor};
+};
+Elm.Color = Elm.Color || {};
+Elm.Color.Interpolate = Elm.Color.Interpolate || {};
+Elm.Color.Interpolate.make = function (_elm) {
+   "use strict";
+   _elm.Color = _elm.Color || {};
+   _elm.Color.Interpolate = _elm.Color.Interpolate || {};
+   if (_elm.Color.Interpolate.values)
+   return _elm.Color.Interpolate.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Color = Elm.Color.make(_elm),
+   $Color$Convert = Elm.Color.Convert.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var linear = F3(function (t,i1,i2) {
+      return i1 + (i2 - i1) * t;
+   });
+   var degree360 = $Basics.degrees(360);
+   var degree180 = $Basics.degrees(180);
+   var interpolate = F4(function (space,cl1,cl2,t) {
+      var i = linear(t);
+      var _p0 = space;
+      switch (_p0.ctor)
+      {case "RGB": var cl2$ = $Color.toRgb(cl2);
+           var cl1$ = $Color.toRgb(cl1);
+           return A4($Color.rgba,
+           $Basics.round(A2(i,
+           $Basics.toFloat(cl1$.red),
+           $Basics.toFloat(cl2$.red))),
+           $Basics.round(A2(i,
+           $Basics.toFloat(cl1$.green),
+           $Basics.toFloat(cl2$.green))),
+           $Basics.round(A2(i,
+           $Basics.toFloat(cl1$.blue),
+           $Basics.toFloat(cl2$.blue))),
+           A2(i,cl1$.alpha,cl2$.alpha));
+         case "HSL": var cl2$ = $Color.toHsl(cl2);
+           var h2 = cl2$.hue;
+           var cl1$ = $Color.toHsl(cl1);
+           var h1 = cl1$.hue;
+           var dH = _U.cmp(h2,h1) > 0 && _U.cmp(h2 - h1,
+           degree180) > 0 ? h2 - h1 + degree360 : _U.cmp(h2,
+           h1) < 0 && _U.cmp(h1 - h2,
+           degree180) > 0 ? h2 + degree360 - h1 : h2 - h1;
+           return A4($Color.hsla,
+           h1 + t * dH,
+           A2(i,cl1$.saturation,cl2$.saturation),
+           A2(i,cl1$.lightness,cl2$.lightness),
+           A2(i,cl1$.alpha,cl2$.alpha));
+         default: var lab2 = $Color$Convert.colorToLab(cl2);
+           var lab1 = $Color$Convert.colorToLab(cl1);
+           return $Color$Convert.labToColor({l: A2(i,lab1.l,lab2.l)
+                                            ,a: A2(i,lab1.a,lab2.a)
+                                            ,b: A2(i,lab1.b,lab2.b)});}
+   });
+   var LAB = {ctor: "LAB"};
+   var HSL = {ctor: "HSL"};
+   var RGB = {ctor: "RGB"};
+   return _elm.Color.Interpolate.values = {_op: _op
+                                          ,interpolate: interpolate
+                                          ,RGB: RGB
+                                          ,HSL: HSL
+                                          ,LAB: LAB};
+};
+Elm.Color = Elm.Color || {};
+Elm.Color.Gradient = Elm.Color.Gradient || {};
+Elm.Color.Gradient.make = function (_elm) {
+   "use strict";
+   _elm.Color = _elm.Color || {};
+   _elm.Color.Gradient = _elm.Color.Gradient || {};
+   if (_elm.Color.Gradient.values)
+   return _elm.Color.Gradient.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Color = Elm.Color.make(_elm),
+   $Color$Interpolate = Elm.Color.Interpolate.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var getNextGradientStop = F2(function (currentStop,gradient) {
+      var nextStop = $List.head(gradient);
+      var _p0 = nextStop;
+      if (_p0.ctor === "Just") {
+            return {ctor: "_Tuple2"
+                   ,_0: _p0._0
+                   ,_1: A2($Maybe.withDefault,_U.list([]),$List.tail(gradient))};
+         } else {
+            return {ctor: "_Tuple2",_0: currentStop,_1: gradient};
+         }
+   });
+   var calculateColor = F4(function (space,_p2,_p1,t) {
+      var _p3 = _p2;
+      var _p7 = _p3._0;
+      var _p6 = _p3._1;
+      var _p4 = _p1;
+      var _p5 = _p4._1;
+      return _U.eq(t,0) ? _p6 : _U.eq(t,
+      1) ? _p5 : A4($Color$Interpolate.interpolate,
+      space,
+      _p6,
+      _p5,
+      (t - _p7) / (_p4._0 - _p7));
+   });
+   var calculateGradient = F5(function (space,
+   stop1,
+   stop2,
+   gradient,
+   t) {
+      if (_U.cmp($Basics.fst(stop2),t) < 0) {
+            var _p8 = A2(getNextGradientStop,stop2,gradient);
+            var stop2$ = _p8._0;
+            var gradient$ = _p8._1;
+            var stop1$ = stop2;
+            return {ctor: "_Tuple4"
+                   ,_0: stop1$
+                   ,_1: stop2$
+                   ,_2: gradient$
+                   ,_3: A4(calculateColor,space,stop1$,stop2$,t)};
+         } else return {ctor: "_Tuple4"
+                       ,_0: stop1
+                       ,_1: stop2
+                       ,_2: gradient
+                       ,_3: A4(calculateColor,space,stop1,stop2,t)};
+   });
+   var c = F3(function (space,t,_p9) {
+      var _p10 = _p9;
+      var _p11 = A5(calculateGradient,
+      space,
+      _p10._0,
+      _p10._1,
+      _p10._2,
+      t);
+      var stop1$ = _p11._0;
+      var stop2$ = _p11._1;
+      var gradient$ = _p11._2;
+      var color = _p11._3;
+      return {ctor: "_Tuple4"
+             ,_0: stop1$
+             ,_1: stop2$
+             ,_2: gradient$
+             ,_3: A2($List._op["::"],color,_p10._3)};
+   });
+   var gradientFromStops = F3(function (space,stops,size) {
+      var purifiedStops = A2($List.sortBy,
+      function (_p12) {
+         var _p13 = _p12;
+         return _p13._0;
+      },
+      A2($List.filter,
+      function (_p14) {
+         var _p15 = _p14;
+         var _p16 = _p15._0;
+         return _U.cmp(_p16,0) > -1 && _U.cmp(_p16,1) < 1;
+      },
+      stops));
+      var stop1 = $List.head(purifiedStops);
+      var _p17 = stop1;
+      if (_p17.ctor === "Just") {
+            var _p21 = _p17._0;
+            var currentStops = A2($Maybe.withDefault,
+            _U.list([]),
+            $List.tail(purifiedStops));
+            var _p18 = A2(getNextGradientStop,_p21,currentStops);
+            var s2 = _p18._0;
+            var g = _p18._1;
+            var l = size - 1;
+            var stops = A2($List.map,
+            function (i) {
+               return $Basics.toFloat(i) / l;
+            },
+            _U.range(0,l));
+            return $List.reverse(function (_p19) {
+               var _p20 = _p19;
+               return _p20._3;
+            }(A3($List.foldl,
+            c(space),
+            {ctor: "_Tuple4",_0: _p21,_1: s2,_2: g,_3: _U.list([])},
+            stops)));
+         } else {
+            return _U.list([]);
+         }
+   });
+   var gradient = F3(function (space,palette,size) {
+      var l = $List.length(palette) - 1;
+      var gr = A3($List.map2,
+      F2(function (i,cl) {
+         return {ctor: "_Tuple2"
+                ,_0: $Basics.toFloat(i) / $Basics.toFloat(l)
+                ,_1: cl};
+      }),
+      _U.range(0,l),
+      palette);
+      return A3(gradientFromStops,space,gr,size);
+   });
+   return _elm.Color.Gradient.values = {_op: _op
+                                       ,gradient: gradient
+                                       ,gradientFromStops: gradientFromStops};
+};
 Elm.Random = Elm.Random || {};
 Elm.Random.Array = Elm.Random.Array || {};
 Elm.Random.Array.make = function (_elm) {
@@ -10417,7 +10959,7 @@ Elm.Noise.make = function (_elm) {
       var seed$ = _p0._1;
       return {ctor: "_Tuple2"
              ,_0: {perm: perm,permMod12: generatePermMod12(perm)}
-             ,_1: seed};
+             ,_1: seed$};
    };
    var get = F2(function (arr,i) {
       var _p4 = A2($Array.get,i,arr);
@@ -10750,8 +11292,14 @@ Elm.Editor.Types.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
-   var Bezier = F6(function (a,b,c,d,e,f) {
-      return {p1: a,c1: b,c2: c,p2: d,color: e,opacity: f};
+   var Bezier = F7(function (a,b,c,d,e,f,g) {
+      return {p1: a
+             ,c1: b
+             ,c2: c
+             ,p2: d
+             ,color: e
+             ,opacity: f
+             ,strokeWidth: g};
    });
    var Line = F2(function (a,b) {    return {start: a,end: b};});
    var Point = F2(function (a,b) {    return {x: a,y: b};});
@@ -11280,7 +11828,8 @@ Elm.WallpaperGroup.Settings.make = function (_elm) {
          case "P2mg": var _p14 = _p0._0;
            var _p13 = _p0._1;
            return {steps: _U.list([$WallpaperGroup$Geom$Rotate.rotate180({x: _p14
-                                                                         ,y: _p13 / 2})])
+                                                                         ,y: _p13 / 2})
+                                  ,A2($WallpaperGroup$Geom$Mirror.mirrorHorizontal,_p14,_p13)])
                   ,translate: A2($WallpaperGroup$Geom$Translate.w2h2,_p14,_p13)
                   ,tileCoordinates: A2($WallpaperGroup$Geom$Util.rectCoords,
                   _p14,
@@ -11486,6 +12035,7 @@ Elm.Editor.Model.make = function (_elm) {
    var initialColorState = {colorSearch: ""
                            ,palettes: _U.list([])
                            ,selectedPalette: _U.list([])
+                           ,selectedGradient: _U.list([])
                            ,loading: false
                            ,paletteOpen: false};
    var initialDrawingState = {lineStart: {x: 0,y: 0}
@@ -11502,16 +12052,14 @@ Elm.Editor.Model.make = function (_elm) {
                              ,noiseY: 10
                              ,noiseZ: 10
                              ,noiseDesctruction: 5
-                             ,width: 40
-                             ,height: 40
-                             ,groupType: "P1"
+                             ,groupType: "P4"
                              ,rasterSize: 4
-                             ,boundingBox: $WallpaperGroup$Pattern.bounding(A2($WallpaperGroup$Group.P1,
+                             ,boundingBox: $WallpaperGroup$Pattern.bounding(A2($WallpaperGroup$Group.P4,
                              150,
                              150))
                              ,tile: _U.list([])
-                             ,group: A2($WallpaperGroup$Group.P1,40,40)
-                             ,previewGroup: A2($WallpaperGroup$Group.P1,150,150)
+                             ,group: A2($WallpaperGroup$Group.P4,40,40)
+                             ,previewGroup: A2($WallpaperGroup$Group.P4,150,150)
                              ,noise: _U.list([])
                              ,pattern: _U.list([])};
    var initialModel = {patternState: initialPatternState
@@ -11528,12 +12076,13 @@ Elm.Editor.Model.make = function (_elm) {
              ,redoStack: e
              ,seed: f};
    });
-   var ColorState = F5(function (a,b,c,d,e) {
+   var ColorState = F6(function (a,b,c,d,e,f) {
       return {colorSearch: a
              ,palettes: b
              ,selectedPalette: c
-             ,loading: d
-             ,paletteOpen: e};
+             ,selectedGradient: d
+             ,loading: e
+             ,paletteOpen: f};
    });
    var DrawingState = F4(function (a,b,c,d) {
       return {lineStart: a
@@ -11555,26 +12104,20 @@ Elm.Editor.Model.make = function (_elm) {
                                     return function (l) {
                                        return function (m) {
                                           return function (n) {
-                                             return function (o) {
-                                                return function (p) {
-                                                   return {columns: a
-                                                          ,rows: b
-                                                          ,noiseX: c
-                                                          ,noiseY: d
-                                                          ,noiseZ: e
-                                                          ,noiseDesctruction: f
-                                                          ,width: g
-                                                          ,height: h
-                                                          ,group: i
-                                                          ,previewGroup: j
-                                                          ,groupType: k
-                                                          ,boundingBox: l
-                                                          ,rasterSize: m
-                                                          ,tile: n
-                                                          ,noise: o
-                                                          ,pattern: p};
-                                                };
-                                             };
+                                             return {columns: a
+                                                    ,rows: b
+                                                    ,noiseX: c
+                                                    ,noiseY: d
+                                                    ,noiseZ: e
+                                                    ,noiseDesctruction: f
+                                                    ,group: g
+                                                    ,previewGroup: h
+                                                    ,groupType: i
+                                                    ,boundingBox: j
+                                                    ,rasterSize: k
+                                                    ,tile: l
+                                                    ,noise: m
+                                                    ,pattern: n};
                                           };
                                        };
                                     };
@@ -11699,12 +12242,20 @@ Elm.Editor.Util.TileSize.make = function (_elm) {
    var _op = {};
    var getTileSize = function (groupType) {
       return A2($Regex.contains,
+      $Regex.regex("(P6)|(P31m)|(Cm)"),
+      groupType) ? 70 : A2($Regex.contains,
+      $Regex.regex("P3"),
+      groupType) ? 50 : 40;
+   };
+   var getPreviewTileSize = function (groupType) {
+      return A2($Regex.contains,
       $Regex.regex("(P6)|(P31m)"),
       groupType) ? 200 : A2($Regex.contains,
       $Regex.regex("P3"),
       groupType) ? 172 : 150;
    };
    return _elm.Editor.Util.TileSize.values = {_op: _op
+                                             ,getPreviewTileSize: getPreviewTileSize
                                              ,getTileSize: getTileSize};
 };
 Elm.Editor = Elm.Editor || {};
@@ -11790,57 +12341,67 @@ Elm.Editor.Util.Pattern.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
    var _op = {};
-   var randomPoint = F3(function (p,noise,noiseDesctruction) {
+   var randomPoint = F3(function (_p0,noise,noiseDesctruction) {
+      var _p1 = _p0;
+      var _p3 = _p1._1;
+      var _p2 = _p1._0;
       var rad = noise * $Basics.toFloat(noiseDesctruction);
       var angle = noise * $Basics.pi * 4;
-      return {x: p.x + $Basics.cos(angle) * rad
-             ,y: p.y + $Basics.sin(angle) * rad};
+      return {ctor: "_Tuple2"
+             ,_0: {x: _p2.x + $Basics.cos(angle) * rad
+                  ,y: _p2.y - $Basics.sin(angle) * rad}
+             ,_1: {x: _p3.x - $Basics.cos(angle) * rad
+                  ,y: _p3.y + $Basics.sin(angle) * rad}};
    });
    var getTileLength = function (tiles) {
       return $List.length(A2($Maybe.withDefault,
       _U.list([]),
       $List.head(tiles)));
    };
-   var scalePoint = F2(function (_p0,p) {
-      var _p1 = _p0;
-      var _p2 = _p1.groupType;
-      return {x: p.x / $Editor$Util$TileSize.getTileSize(_p2) * _p1.width
-             ,y: p.y / $Editor$Util$TileSize.getTileSize(_p2) * _p1.height};
+   var scalePoint = F2(function (_p4,p) {
+      var _p5 = _p4;
+      var _p6 = _p5.groupType;
+      return {x: p.x / $Editor$Util$TileSize.getPreviewTileSize(_p6) * $Editor$Util$TileSize.getTileSize(_p6)
+             ,y: p.y / $Editor$Util$TileSize.getPreviewTileSize(_p6) * $Editor$Util$TileSize.getTileSize(_p6)};
    });
    var getColor = F2(function (colors,noise) {
-      var color = A2($Array.get,
-      $Basics.floor($Basics.toFloat($List.length(colors)) * $Basics.abs(noise)),
-      $Array.fromList(colors));
-      var _p3 = color;
-      if (_p3.ctor === "Just") {
-            return A2($Basics._op["++"],"#",_p3._0);
+      var i = $Basics.floor($Basics.toFloat($List.length(colors)) * ((1 + noise) / 2));
+      var color = A2($Array.get,i,$Array.fromList(colors));
+      var _p7 = color;
+      if (_p7.ctor === "Just") {
+            return _p7._0;
          } else {
             return "grey";
          }
    });
-   var calcPath = F3(function (noiseDesctruction,colors,_p4) {
-      var _p5 = _p4;
-      var _p7 = _p5._0;
-      var _p6 = _p5._1;
-      var color = A2(getColor,colors,_p7);
+   var calcPath = F3(function (noiseDesctruction,colors,_p8) {
+      var _p9 = _p8;
+      var _p12 = _p9._0;
+      var _p11 = _p9._1;
+      var color = A2(getColor,colors,_p12);
       var p2 = A2($Maybe.withDefault,
       {x: 0,y: 0},
-      $List.head($List.reverse(_p6)));
-      var c2 = A3(randomPoint,p2,_p7,noiseDesctruction);
-      var p1 = A2($Maybe.withDefault,{x: 0,y: 0},$List.head(_p6));
-      var c1 = A3(randomPoint,p1,0 - _p7,noiseDesctruction);
+      $List.head($List.reverse(_p11)));
+      var p1 = A2($Maybe.withDefault,{x: 0,y: 0},$List.head(_p11));
+      var _p10 = A3(randomPoint,
+      {ctor: "_Tuple2",_0: p1,_1: p2},
+      0 - _p12,
+      noiseDesctruction);
+      var c1 = _p10._0;
+      var c2 = _p10._1;
       return {p1: p1
              ,p2: p2
              ,c1: c1
              ,c2: c2
              ,color: color
-             ,opacity: 1 - $Basics.abs(_p7)};
+             ,opacity: 1
+             ,strokeWidth: $Basics.abs($Basics.sin(_p12)) * 2};
    });
    var calcTile = F3(function (noiseDesctruction,colors,tile) {
       var lines = A2($List.filter,
-      function (_p8) {
-         var _p9 = _p8;
-         return _U.cmp($Basics.abs(_p9._0),0.2) > 0;
+      function (_p13) {
+         var _p14 = _p13;
+         return _U.cmp($Basics.abs(_p14._0),0.1) > -1;
       },
       tile);
       return A2($List.map,
@@ -11848,7 +12409,7 @@ Elm.Editor.Util.Pattern.make = function (_elm) {
       lines);
    });
    var updatePatternInModel = function (model) {
-      var colors = model.colorState.selectedPalette;
+      var colors = model.colorState.selectedGradient;
       var patternState = model.patternState;
       var group = patternState.group;
       var columns = patternState.columns;
@@ -11862,9 +12423,9 @@ Elm.Editor.Util.Pattern.make = function (_elm) {
       columns,
       tile);
       var maxZ = getTileLength(groups);
-      var _p10 = A2($Editor$Util$Noise.noise,model,maxZ);
-      var noise = _p10._0;
-      var seed = _p10._1;
+      var _p15 = A2($Editor$Util$Noise.noise,model,maxZ);
+      var noise = _p15._0;
+      var seed = _p15._1;
       var noisyGroups = A3($List.map2,
       $List.map2(F2(function (v0,v1) {
          return {ctor: "_Tuple2",_0: v0,_1: v1};
@@ -11952,6 +12513,42 @@ Elm.Editor.Util.History.make = function (_elm) {
                                             ,addHistory: addHistory
                                             ,undo: undo
                                             ,redo: redo};
+};
+Elm.Editor = Elm.Editor || {};
+Elm.Editor.Util = Elm.Editor.Util || {};
+Elm.Editor.Util.Color = Elm.Editor.Util.Color || {};
+Elm.Editor.Util.Color.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Util = _elm.Editor.Util || {};
+   _elm.Editor.Util.Color = _elm.Editor.Util.Color || {};
+   if (_elm.Editor.Util.Color.values)
+   return _elm.Editor.Util.Color.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Color$Convert = Elm.Color.Convert.make(_elm),
+   $Color$Gradient = Elm.Color.Gradient.make(_elm),
+   $Color$Interpolate = Elm.Color.Interpolate.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var toGradient = function (l) {
+      return A2($List.map,
+      $Color$Convert.colorToCssRgb,
+      A3($Basics.flip,
+      $Color$Gradient.gradient($Color$Interpolate.LAB),
+      20,
+      A2($Debug.log,
+      "colors",
+      A2($List.filterMap,
+      $Basics.identity,
+      A2($List.map,$Color$Convert.hexToColor,l)))));
+   };
+   return _elm.Editor.Util.Color.values = {_op: _op
+                                          ,toGradient: toGradient};
 };
 Elm.Native.Effects = {};
 Elm.Native.Effects.make = function(localRuntime) {
@@ -12223,6 +12820,7 @@ Elm.Editor.Action.make = function (_elm) {
    $Editor$Model = Elm.Editor.Model.make(_elm),
    $Editor$Signals = Elm.Editor.Signals.make(_elm),
    $Editor$Types = Elm.Editor.Types.make(_elm),
+   $Editor$Util$Color = Elm.Editor.Util.Color.make(_elm),
    $Editor$Util$Geom = Elm.Editor.Util.Geom.make(_elm),
    $Editor$Util$History = Elm.Editor.Util.History.make(_elm),
    $Editor$Util$Pattern = Elm.Editor.Util.Pattern.make(_elm),
@@ -12283,6 +12881,9 @@ Elm.Editor.Action.make = function (_elm) {
       "P2mg") ? A2($WallpaperGroup$Group.P2mg,
       width,
       height) : _U.eq(groupType,
+      "P2gg") ? A2($WallpaperGroup$Group.P2gg,
+      width,
+      height) : _U.eq(groupType,
       "C2mm") ? A2($WallpaperGroup$Group.C2mm,
       width,
       height) : _U.eq(groupType,"P4") ? A2($WallpaperGroup$Group.P4,
@@ -12301,6 +12902,8 @@ Elm.Editor.Action.make = function (_elm) {
       width,
       height);
    });
+   var UpadtePattern = {ctor: "UpadtePattern"};
+   var ClosePallete = {ctor: "ClosePallete"};
    var TogglePallete = function (a) {
       return {ctor: "TogglePallete",_0: a};
    };
@@ -12390,7 +12993,8 @@ Elm.Editor.Action.make = function (_elm) {
                   {noiseDesctruction: _p3._0})}))
                   ,_1: $Effects.none};
          case "Group": var _p4 = _p3._0;
-           var previewGroupSize = $Editor$Util$TileSize.getTileSize(_p4);
+           var groupSize = $Editor$Util$TileSize.getTileSize(_p4);
+           var previewGroupSize = $Editor$Util$TileSize.getPreviewTileSize(_p4);
            var previewGroup = A3(getGroup,
            _p4,
            previewGroupSize,
@@ -12400,7 +13004,7 @@ Elm.Editor.Action.make = function (_elm) {
            return {ctor: "_Tuple2"
                   ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
                   {patternState: _U.update(patternState,
-                  {group: A3(getGroup,_p4,patternState.height,patternState.width)
+                  {group: A3(getGroup,_p4,groupSize,groupSize)
                   ,previewGroup: previewGroup
                   ,groupType: _p4
                   ,boundingBox: boundingBox})
@@ -12414,7 +13018,7 @@ Elm.Editor.Action.make = function (_elm) {
                   ,_1: $Effects.none};
          case "RasterSize": var _p5 = _p3._0;
            var model = $Editor$Util$History.addHistory(model);
-           var previewGroupSize = $Editor$Util$TileSize.getTileSize(model.patternState.groupType);
+           var previewGroupSize = $Editor$Util$TileSize.getPreviewTileSize(model.patternState.groupType);
            return {ctor: "_Tuple2"
                   ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
                   {patternState: _U.update(patternState,
@@ -12495,17 +13099,17 @@ Elm.Editor.Action.make = function (_elm) {
                              ,_0: $Editor$Util$History.redo(model)
                              ,_1: $Effects.none};
          case "StartColorSearch": var _p9 = _p3._0;
-           var sendTask = A2($Task.andThen,
+           var sendTask = $Effects.task(A2($Task.andThen,
            A2($Signal.send,$Editor$Signals.requestPalette.address,_p9),
            function (_p8) {
               return $Task.succeed(NoOp);
-           });
+           }));
            var model = $Editor$Util$History.addHistory(model);
            return {ctor: "_Tuple2"
                   ,_0: _U.update(model,
                   {colorState: _U.update(colorState,
                   {colorSearch: _p9,loading: true})})
-                  ,_1: $Effects.task(sendTask)};
+                  ,_1: sendTask};
          case "NewColors": var _p10 = _p3._0;
            if (_p10.ctor === "Ok") {
                  return {ctor: "_Tuple2"
@@ -12520,15 +13124,31 @@ Elm.Editor.Action.make = function (_elm) {
                         {palettes: _U.list([]),loading: false})})
                         ,_1: $Effects.none};
               }
-         case "SelectPalette":
-         var model = $Editor$Util$History.addHistory(model);
+         case "SelectPalette": var _p11 = _p3._0;
+           var p = $Editor$Util$Color.toGradient(_p11);
+           var model = $Editor$Util$History.addHistory(model);
            return {ctor: "_Tuple2"
                   ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                  {colorState: _U.update(colorState,{selectedPalette: _p3._0})}))
+                  {colorState: _U.update(colorState,
+                  {selectedGradient: p,selectedPalette: _p11})}))
                   ,_1: $Effects.none};
-         default: return {ctor: "_Tuple2"
+         case "TogglePallete": var _p13 = _p3._0;
+           return _p13 ? {ctor: "_Tuple2"
                          ,_0: _U.update(model,
-                         {colorState: _U.update(colorState,{paletteOpen: _p3._0})})
+                         {colorState: _U.update(colorState,{paletteOpen: _p13})})
+                         ,_1: $Effects.none} : {ctor: "_Tuple2"
+                                               ,_0: model
+                                               ,_1: $Effects.task(A2($Task.andThen,
+                                               $Task.sleep(300),
+                                               function (_p12) {
+                                                  return $Task.succeed(ClosePallete);
+                                               }))};
+         case "ClosePallete": return {ctor: "_Tuple2"
+                                     ,_0: _U.update(model,
+                                     {colorState: _U.update(colorState,{paletteOpen: false})})
+                                     ,_1: $Effects.none};
+         default: return {ctor: "_Tuple2"
+                         ,_0: $Editor$Util$Pattern.updatePatternInModel(model)
                          ,_1: $Effects.none};}
    });
    return _elm.Editor.Action.values = {_op: _op
@@ -12553,6 +13173,8 @@ Elm.Editor.Action.make = function (_elm) {
                                       ,NewColors: NewColors
                                       ,SelectPalette: SelectPalette
                                       ,TogglePallete: TogglePallete
+                                      ,ClosePallete: ClosePallete
+                                      ,UpadtePattern: UpadtePattern
                                       ,getGroup: getGroup
                                       ,getRandom: getRandom
                                       ,getRandomCoord: getRandomCoord
@@ -15100,6 +15722,7 @@ Elm.Editor.Ui.GroupSelect.make = function (_elm) {
                             ,"Cm"
                             ,"P2mm"
                             ,"P2mg"
+                            ,"P2gg"
                             ,"C2mm"
                             ,"P4"
                             ,"P4mm"
@@ -15971,6 +16594,7 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
+   $String = Elm.String.make(_elm),
    $Svg = Elm.Svg.make(_elm),
    $Svg$Attributes = Elm.Svg.Attributes.make(_elm),
    $WallpaperGroup$Geom$BoundingBox = Elm.WallpaperGroup.Geom.BoundingBox.make(_elm),
@@ -16045,7 +16669,7 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
       return A2($Svg.circle,
       _U.list([$Svg$Attributes.cx($Basics.toString(p.x))
               ,$Svg$Attributes.cy($Basics.toString(p.y))
-              ,$Svg$Attributes.r(".5")]),
+              ,$Svg$Attributes.r(".7")]),
       _U.list([]));
    };
    var raster = F5(function (model,
@@ -16072,7 +16696,9 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
       _U.list([$Svg$Attributes.version("1.1")
               ,$Svg$Attributes.x("0")
               ,$Svg$Attributes.y("0")
-              ,$Svg$Attributes.$class("preview")]),
+              ,$Svg$Attributes.$class($String.toLower(A2($Basics._op["++"],
+              "preview ",
+              $Basics.toString(group))))]),
       _U.list([A4($Editor$Util$Svg.renderPaths,
               group,
               1,
@@ -16139,14 +16765,26 @@ Elm.Editor.Ui.ColorFinder.make = function (_elm) {
    isLoading,
    palettes,
    address) {
-      return isLoading ? A2($Html.ul,
-      _U.list([$Html$Attributes.$class("loader")]),
-      _U.list([A2($Html.li,
+      return isLoading ? A2($Html.div,
+      _U.list([$Html$Attributes.$class("palettes loader")]),
+      _U.list([A2($Html.span,
       _U.list([]),
-      _U.list([]))])) : isShown && _U.eq($List.length(palettes),
-      0) ? A2($Html.span,_U.list([]),_U.list([])) : A2($Html.ul,
+      _U.list([]))])) : isShown && _U.cmp($List.length(palettes),
+      0) > 0 ? A2($Html.div,
+      _U.list([$Html$Attributes.$class("palettes")]),
+      _U.list([A2($Html.ul,
       _U.list([]),
-      A2($List.map,palette(address),palettes));
+      A2($List.map,palette(address),palettes))])) : A2($Html.span,
+      _U.list([]),
+      _U.list([]));
+   });
+   var selectedColor = F2(function (address,colors) {
+      return A2($Html.div,
+      _U.list([$Html$Attributes.$class("preview")
+              ,A2($Html$Events.onClick,
+              address,
+              $Editor$Action.UpadtePattern)]),
+      A2($List.map,colorItem,colors));
    });
    var colorFinder = F2(function (address,model) {
       return A2($Html.div,
@@ -16169,8 +16807,10 @@ Elm.Editor.Ui.ColorFinder.make = function (_elm) {
                       address,
                       $Editor$Action.TogglePallete(true))
                       ,$Html$Attributes.type$("text")
-                      ,$Html$Attributes.value(model.colorSearch)]),
+                      ,$Html$Attributes.value(model.colorSearch)
+                      ,$Html$Attributes.placeholder("Search palettes")]),
               _U.list([]))
+              ,A2(selectedColor,address,model.selectedPalette)
               ,A4(colorList,
               model.paletteOpen,
               model.loading,
@@ -16180,6 +16820,7 @@ Elm.Editor.Ui.ColorFinder.make = function (_elm) {
    return _elm.Editor.Ui.ColorFinder.values = {_op: _op
                                               ,colorItem: colorItem
                                               ,palette: palette
+                                              ,selectedColor: selectedColor
                                               ,colorList: colorList
                                               ,colorFinder: colorFinder};
 };
@@ -16249,19 +16890,29 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
    var _op = {};
    var renderPath = function (_p0) {
       var _p1 = _p0;
+      var _p5 = _p1.p1;
+      var _p4 = _p1.color;
+      var _p3 = _p1.c2;
+      var _p2 = _p1.c1;
       var path = A2($String.join,
       " ",
       _U.list(["M"
-              ,$Editor$Util$Svg.pointToString(_p1.p1)
+              ,$Editor$Util$Svg.pointToString(_p5)
               ,"C"
-              ,$Editor$Util$Svg.pointToString(_p1.c1)
-              ,$Editor$Util$Svg.pointToString(_p1.c2)
-              ,$Editor$Util$Svg.pointToString(_p1.p2)]));
+              ,$Editor$Util$Svg.pointToString(_p3)
+              ,$Editor$Util$Svg.pointToString(_p2)
+              ,$Editor$Util$Svg.pointToString(_p1.p2)
+              ,"C"
+              ,$Editor$Util$Svg.pointToString(_p2)
+              ,$Editor$Util$Svg.pointToString(_p3)
+              ,$Editor$Util$Svg.pointToString(_p5)
+              ,"Z"]));
       return A2($Svg.path,
       _U.list([$Svg$Attributes.d(path)
-              ,$Svg$Attributes.stroke(_p1.color)
-              ,$Svg$Attributes.opacity($Basics.toString(_p1.opacity))
-              ,$Svg$Attributes.fill("none")
+              ,$Svg$Attributes.strokeWidth($Basics.toString(_p1.strokeWidth))
+              ,$Svg$Attributes.stroke(_p4)
+              ,$Svg$Attributes.opacity("1")
+              ,$Svg$Attributes.fill(_p4)
               ,$Svg$Attributes.$class("tile")]),
       _U.list([]));
    };
@@ -16278,13 +16929,13 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
               ,$Svg$Attributes.y("0")]),
       _U.list([renderColorizedNoisyTiles(model)]));
    };
-   var renderLine = function (_p2) {
-      var _p3 = _p2;
+   var renderLine = function (_p6) {
+      var _p7 = _p6;
       return A2($Svg.line,
       A3($List.foldl,
       $Editor$Util$Svg.lineToAttribute,
       _U.list([]),
-      _p3._1),
+      _p7._1),
       _U.list([]));
    };
    return _elm.Editor.Ui.PatternStage.values = {_op: _op
@@ -16330,7 +16981,17 @@ Elm.Editor.View.make = function (_elm) {
               ,$Html$Attributes.id("String")]),
       _U.list([A2($Html.div,
               _U.list([$Html$Attributes.$class("sidebar")]),
-              _U.list([$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.rasterSize)
+              _U.list([A2($Editor$Ui$GroupSelect.groupSelect,
+                      patternState.groupType,
+                      address)
+                      ,A2($Editor$Ui$ColorFinder.colorFinder,address,model.colorState)
+                      ,A5($Editor$Ui$Raster.raster,
+                      drawingState,
+                      patternState.tile,
+                      patternState.previewGroup,
+                      patternState.boundingBox,
+                      address)
+                      ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.rasterSize)
                                                 ,min: "1"
                                                 ,max: "20"
                                                 ,address: address
@@ -16373,21 +17034,12 @@ Elm.Editor.View.make = function (_elm) {
                                                    return $Editor$Action.NoiseZ($Editor$Util$Convert.toInt(str));
                                                 }})
                       ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.noiseDesctruction)
-                                                ,min: "1"
-                                                ,max: "20"
+                                                ,min: "0"
+                                                ,max: "100"
                                                 ,address: address
                                                 ,createAction: function (str) {
                                                    return $Editor$Action.NoiseDesctruction($Editor$Util$Convert.toInt(str));
                                                 }})
-                      ,A2($Editor$Ui$GroupSelect.groupSelect,
-                      patternState.groupType,
-                      address)
-                      ,A5($Editor$Ui$Raster.raster,
-                      drawingState,
-                      patternState.tile,
-                      patternState.previewGroup,
-                      patternState.boundingBox,
-                      address)
                       ,A2($Html.button,
                       _U.list([A3($Html$Events.on,
                       "click",
@@ -16421,12 +17073,9 @@ Elm.Editor.View.make = function (_elm) {
                                  return A2($Signal.message,address,$Editor$Action.Redo);
                               })
                               ,$Html$Attributes.disabled(redoDisabled)]),
-                      _U.list([$Html.text("Redo")]))
-                      ,A2($Editor$Ui$ColorFinder.colorFinder,
-                      address,
-                      model.colorState)]))
+                      _U.list([$Html.text("Redo")]))]))
               ,A2($Html.div,
-              _U.list([$Html$Attributes.$class("main lalasd")]),
+              _U.list([$Html$Attributes.$class("main")]),
               _U.list([$Editor$Ui$PatternStage.stage(model.patternState.pattern)]))]));
    });
    return _elm.Editor.View.values = {_op: _op,view: view};

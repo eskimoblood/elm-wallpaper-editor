@@ -16,6 +16,7 @@ groupTypes =
   , "Cm"
   , "P2mm"
   , "P2mg"
+  , "P2gg"
   , "C2mm"
   , "P4"
   , "P4mm"

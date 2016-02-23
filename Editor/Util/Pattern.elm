@@ -25,10 +25,10 @@ getColor colors noise =
                 "grey"
 
 
-scalePoint : { a | width : Float, height : Float, groupType : String } -> Point -> Point
-scalePoint { width, height, groupType } p =
-    { x = p.x / (getTileSize groupType) * width
-    , y = p.y / (getTileSize groupType) * height
+scalePoint : { a | groupType : String } -> Point -> Point
+scalePoint {  groupType } p =
+    { x = p.x / (getPreviewTileSize groupType) *  (getTileSize groupType)
+    , y = p.y / (getPreviewTileSize groupType) *  (getTileSize groupType)
     }
 
 
@@ -66,7 +66,7 @@ calcPath noiseDesctruction colors ( noise, line ) =
         , c2 = c2
         , color = color
         , opacity = 1
-        , strokeWidth = abs (sin noise) 
+        , strokeWidth = abs (sin noise) * 2
         }
 
 
@@ -95,13 +95,13 @@ updatePatternInModel model =
 
         maxZ = getTileLength groups
 
-        ( noise, seed ) = (Noise.noise model maxZ)
+        ( noise, seed ) = Noise.noise model maxZ
 
         noisyGroups = (List.map2 (List.map2 (,)) noise groups)
 
         noiseDesctruction = patternState.noiseDesctruction
 
-        colors = model.colorState.selectedPalette
+        colors = model.colorState.selectedGradient
 
         pattern = List.map (calcTile noiseDesctruction colors) noisyGroups
     in

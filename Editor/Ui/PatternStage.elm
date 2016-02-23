@@ -21,12 +21,12 @@ renderPath { p1, p2, c1, c2, opacity, color, strokeWidth } =
                 [ "M"
                 , (pointToString p1)
                 , "C"
-                , (pointToString c1)
                 , (pointToString c2)
+                , (pointToString c1)
                 , (pointToString p2)
                 , "C"
-                , (pointToString c2)
                 , (pointToString c1)
+                , (pointToString c2)
                 , (pointToString p1)
                 , "Z"
                 ]

@@ -40,6 +40,8 @@ type Action
     | NewColors (Result String (List (List String)))
     | SelectPalette (List String)
     | TogglePallete Bool
+    | ClosePallete
+    | UpadtePattern
 
 
 getGroup : String -> Float -> Float -> Group
@@ -58,6 +60,8 @@ getGroup groupType height width =
         P2mm width height
     else if groupType == "P2mg" then
         P2mg width height
+    else if groupType == "P2gg" then
+        P2gg width height
     else if groupType == "C2mm" then
         C2mm width height
     else if groupType == "P4" then
@@ -167,7 +171,8 @@ update action model =
                 let
                     model = addHistory model
 
-                    previewGroupSize = getTileSize value
+                    previewGroupSize = getPreviewTileSize value
+                    groupSize = getTileSize value
 
                     previewGroup = getGroup value previewGroupSize previewGroupSize
 
@@ -177,7 +182,7 @@ update action model =
                         { model
                             | patternState =
                                 { patternState
-                                    | group = getGroup value patternState.height patternState.width
+                                    | group = getGroup value groupSize groupSize
                                     , previewGroup = previewGroup
                                     , groupType = value
                                     , boundingBox = boundingBox
@@ -194,7 +199,7 @@ update action model =
                 let
                     model = addHistory model
 
-                    previewGroupSize = getTileSize model.patternState.groupType
+                    previewGroupSize = getPreviewTileSize model.patternState.groupType
                 in
                     ( updatePatternInModel
                         { model
@@ -305,11 +310,12 @@ update action model =
                     sendTask =
                         Signal.send requestPalette.address str
                             `Task.andThen` (\_ -> Task.succeed NoOp)
+                            |> Effects.task
                 in
                     ( { model
                         | colorState = { colorState | colorSearch = str, loading = True }
                       }
-                    , sendTask |> Effects.task
+                    , sendTask
                     )
 
             NewColors colors ->
@@ -333,18 +339,34 @@ update action model =
                     model = addHistory model
 
                     p = toGradient palette
-
                 in
                     ( updatePatternInModel
                         { model
-                            | colorState = { colorState | selectedPalette = p }
+                            | colorState = { colorState | selectedGradient = p, selectedPalette = palette }
                         }
                     , Effects.none
                     )
 
             TogglePallete shown ->
+                if shown then
+                    ( { model
+                        | colorState = { colorState | paletteOpen = shown }
+                      }
+                    , Effects.none
+                    )
+                else
+                    ( model
+                    , Effects.task (Task.sleep 300 `Task.andThen` \_ -> Task.succeed ClosePallete)
+                    )
+
+            ClosePallete ->
                 ( { model
-                    | colorState = { colorState | paletteOpen = shown }
+                    | colorState = { colorState | paletteOpen = False }
                   }
+                , Effects.none
+                )
+
+            UpadtePattern ->
+                ( updatePatternInModel model
                 , Effects.none
                 )

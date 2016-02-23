@@ -1,5 +1,4 @@
-module Editor.Ui.Slider where
-
+module Editor.Ui.Slider (..) where
 
 import Html exposing (..)
 import Html.Attributes as Attr
@@ -8,27 +7,27 @@ import Editor.Action exposing (..)
 
 
 type alias SliderSettings =
-  { min: String
-  , max: String
-  , value: String
-  , address: Signal.Address Action
-  , createAction: (String -> Action)
-  }
+    { min : String
+    , max : String
+    , value : String
+    , address : Signal.Address Action
+    , createAction : String -> Action
+    }
 
 
 slider : SliderSettings -> Html
-slider {value, min, max, address, createAction} =
-  div
-    []
-    [ input
-        [ on "input" targetValue (\str -> Signal.message address (createAction str))
-        , Attr.type' "range"
-        , Attr.value value
-        , Attr.max max
-        , Attr.min min
-       ]
-       []
-    , span
+slider { value, min, max, address, createAction } =
+    div
         []
-        [text value]
-  ]
+        [ input
+            [ on "input" targetValue (\str -> Signal.message address (createAction str))
+            , Attr.type' "range"
+            , Attr.value value
+            , Attr.max max
+            , Attr.min min
+            ]
+            []
+        , span
+            []
+            [ text value ]
+        ]

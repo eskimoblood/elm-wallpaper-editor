@@ -1,7 +1,16 @@
-*{
+* {
   box-sizing: border-box;
 }
-
+button {
+  font-family: 'PT Mono';
+  font-weight: 300;
+  background: hsl(0, 0%, 12%);
+  border: solid 1px;
+  color: hsl(56, 96%, 55%);
+  margin: 15px 9px;
+  padding: 4px 10px;
+  outline: none
+}
 .row {
   display: flex;
   height: 100%;
@@ -143,7 +152,7 @@ input[type="range"]::-webkit-slider-thumb:after {
   width: 300px;
   height: 345px;
 }
-.drawingArea .p1, .drawingArea .cm, .drawingArea .p2 , .drawingArea .p2gg {
+.drawingArea .p1, .drawingArea .cm, .drawingArea .p2, .drawingArea .p2gg {
   width: 150px;
   margin-left: 70px
 }
@@ -161,7 +170,7 @@ input[type="range"]::-webkit-slider-thumb:after {
   stroke: #FBED20;
   stroke-width: .2px;
 }
-.palettes ul{
+.palettes ul {
   max-height: 150px;
   overflow: scroll;
   background: #f4f4f4;
@@ -225,12 +234,12 @@ input[type="range"]::-webkit-slider-thumb:after {
   width: 120px;
 }
 .palette .column {
-    border: solid 1px hsl(0, 0%, 81%);
-    border-radius: 2px;
-    background: hsl(0, 100%, 100%);
-    height: 20px;
-    width: 145px;
-    margin-left: 10px;
+  border: solid 1px hsl(0, 0%, 81%);
+  border-radius: 2px;
+  background: hsl(0, 100%, 100%);
+  height: 20px;
+  width: 145px;
+  margin-left: 10px;
 }
 .palette .preview {
   width: 64px;
@@ -238,9 +247,9 @@ input[type="range"]::-webkit-slider-thumb:after {
   padding: 2px;
 }
 .palette .preview span {
-    width: 11px;
-    height: 12px;
-    display: inline-block;
+  width: 11px;
+  height: 12px;
+  display: inline-block;
 }
 .palette .loader {
   width: 100px;
@@ -252,7 +261,6 @@ input[type="range"]::-webkit-slider-thumb:after {
   width: 100%;
   border-radius: 0;
 }
-
 .sidebar select {
   width: 145px;
 }

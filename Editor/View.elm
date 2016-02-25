@@ -36,6 +36,7 @@ view address model =
                 , raster drawingState patternState.tile patternState.previewGroup patternState.boundingBox address
                 , slider
                     { value = (toString patternState.rasterSize)
+                    , name = "Raster"
                     , min = "1"
                     , max = "20"
                     , address = address
@@ -43,6 +44,7 @@ view address model =
                     }
                 , slider
                     { value = (toString patternState.columns)
+                    , name = "Columns"
                     , min = "1"
                     , max = "20"
                     , address = address
@@ -50,6 +52,7 @@ view address model =
                     }
                 , slider
                     { value = (toString patternState.rows)
+                    , name = "Rows"
                     , min = "1"
                     , max = "20"
                     , address = address
@@ -57,6 +60,7 @@ view address model =
                     }
                 , slider
                     { value = (toString patternState.noiseX)
+                    , name = "Noise x"
                     , min = "1"
                     , max = "100"
                     , address = address
@@ -64,6 +68,7 @@ view address model =
                     }
                 , slider
                     { value = (toString patternState.noiseY)
+                    , name = "Noise y"
                     , min = "1"
                     , max = "100"
                     , address = address
@@ -71,6 +76,7 @@ view address model =
                     }
                 , slider
                     { value = (toString patternState.noiseZ)
+                    , name = "Noise z"
                     , min = "1"
                     , max = "100"
                     , address = address
@@ -78,6 +84,7 @@ view address model =
                     }
                 , slider
                     { value = (toString patternState.noiseDesctruction)
+                    , name = "Distortion"
                     , min = "0"
                     , max = "100"
                     , address = address

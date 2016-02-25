@@ -7,19 +7,21 @@ import Editor.Action exposing (..)
 
 
 type alias SliderSettings =
-    { min : String
+    { name : String
+    , min : String
     , max : String
     , value : String
     , address : Signal.Address Action
     , createAction : String -> Action
     }
 
-
 slider : SliderSettings -> Html
-slider { value, min, max, address, createAction } =
+slider { value, min, max, address, createAction, name } =
     div
         []
-        [ input
+        [ label[][text name]
+
+        , input
             [ on "input" targetValue (\str -> Signal.message address (createAction str))
             , Attr.type' "range"
             , Attr.value value

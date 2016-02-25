@@ -11829,6 +11829,7 @@ Elm.WallpaperGroup.Settings.make = function (_elm) {
            var _p13 = _p0._1;
            return {steps: _U.list([$WallpaperGroup$Geom$Rotate.rotate180({x: _p14
                                                                          ,y: _p13 / 2})
+                                  ,linesToTile
                                   ,A2($WallpaperGroup$Geom$Mirror.mirrorHorizontal,_p14,_p13)])
                   ,translate: A2($WallpaperGroup$Geom$Translate.w2h2,_p14,_p13)
                   ,tileCoordinates: A2($WallpaperGroup$Geom$Util.rectCoords,
@@ -11838,7 +11839,9 @@ Elm.WallpaperGroup.Settings.make = function (_elm) {
            var _p15 = _p0._1;
            return {steps: _U.list([$WallpaperGroup$Geom$Rotate.rotate180({x: _p16 / 2
                                                                          ,y: _p15})])
-                  ,translate: A2($WallpaperGroup$Geom$Translate.shifted,_p16,_p15)
+                  ,translate: A2($WallpaperGroup$Geom$Translate.shifted,
+                  _p16 * 2,
+                  _p15)
                   ,tileCoordinates: A2($WallpaperGroup$Geom$Util.rectCoords,
                   _p16,
                   _p15)};
@@ -11851,7 +11854,7 @@ Elm.WallpaperGroup.Settings.make = function (_elm) {
                                   ,A2($WallpaperGroup$Geom$Mirror.mirrorHorizontal,_p18,_p17)])
                   ,translate: A2($WallpaperGroup$Geom$Translate.shifted,
                   _p18 * 2,
-                  _p17)
+                  _p17 * 2)
                   ,tileCoordinates: A2($WallpaperGroup$Geom$Util.rectCoords,
                   _p18,
                   _p17)};
@@ -12451,6 +12454,67 @@ Elm.Editor.Util.Pattern.make = function (_elm) {
 };
 Elm.Editor = Elm.Editor || {};
 Elm.Editor.Util = Elm.Editor.Util || {};
+Elm.Editor.Util.Groups = Elm.Editor.Util.Groups || {};
+Elm.Editor.Util.Groups.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Util = _elm.Editor.Util || {};
+   _elm.Editor.Util.Groups = _elm.Editor.Util.Groups || {};
+   if (_elm.Editor.Util.Groups.values)
+   return _elm.Editor.Util.Groups.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $WallpaperGroup$Group = Elm.WallpaperGroup.Group.make(_elm);
+   var _op = {};
+   var getGroup = F3(function (groupType,height,width) {
+      return _U.eq(groupType,"P1") ? A2($WallpaperGroup$Group.P1,
+      width,
+      height) : _U.eq(groupType,"P2") ? A2($WallpaperGroup$Group.P2,
+      width,
+      height) : _U.eq(groupType,"Pm") ? A2($WallpaperGroup$Group.Pm,
+      width,
+      height) : _U.eq(groupType,"Pg") ? A2($WallpaperGroup$Group.Pg,
+      width,
+      height) : _U.eq(groupType,"Cm") ? A2($WallpaperGroup$Group.Cm,
+      width,
+      height) : _U.eq(groupType,
+      "P2mm") ? A2($WallpaperGroup$Group.P2mm,
+      width,
+      height) : _U.eq(groupType,
+      "P2mg") ? A2($WallpaperGroup$Group.P2mg,
+      width,
+      height) : _U.eq(groupType,
+      "P2gg") ? A2($WallpaperGroup$Group.P2gg,
+      width,
+      height) : _U.eq(groupType,
+      "C2mm") ? A2($WallpaperGroup$Group.C2mm,
+      width,
+      height) : _U.eq(groupType,"P4") ? A2($WallpaperGroup$Group.P4,
+      width,
+      height) : _U.eq(groupType,
+      "P4mm") ? A2($WallpaperGroup$Group.P4mm,
+      width,
+      height) : _U.eq(groupType,
+      "P4mg") ? A2($WallpaperGroup$Group.P4mg,
+      width,
+      height) : _U.eq(groupType,
+      "P3") ? $WallpaperGroup$Group.P3(width) : _U.eq(groupType,
+      "P3m1") ? $WallpaperGroup$Group.P3m1(width) : _U.eq(groupType,
+      "P31m") ? $WallpaperGroup$Group.P31m(width) : _U.eq(groupType,
+      "P6") ? $WallpaperGroup$Group.P6(width) : A2($WallpaperGroup$Group.P1,
+      width,
+      height);
+   });
+   return _elm.Editor.Util.Groups.values = {_op: _op
+                                           ,getGroup: getGroup};
+};
+Elm.Editor = Elm.Editor || {};
+Elm.Editor.Util = Elm.Editor.Util || {};
 Elm.Editor.Util.History = Elm.Editor.Util.History || {};
 Elm.Editor.Util.History.make = function (_elm) {
    "use strict";
@@ -12463,10 +12527,14 @@ Elm.Editor.Util.History.make = function (_elm) {
    $Basics = Elm.Basics.make(_elm),
    $Debug = Elm.Debug.make(_elm),
    $Editor$Model = Elm.Editor.Model.make(_elm),
+   $Editor$Util$Groups = Elm.Editor.Util.Groups.make(_elm),
+   $Editor$Util$Raster = Elm.Editor.Util.Raster.make(_elm),
+   $Editor$Util$TileSize = Elm.Editor.Util.TileSize.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm);
+   $Signal = Elm.Signal.make(_elm),
+   $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
    var _op = {};
    var redo = function (model) {
       var newHistory = A2($Maybe.withDefault,
@@ -12477,10 +12545,20 @@ Elm.Editor.Util.History.make = function (_elm) {
       var undoStack = model.undoStack;
       var _p0 = lastState;
       if (_p0.ctor === "Just") {
+            var _p1 = _p0._0;
+            var previewGroupSize = $Editor$Util$TileSize.getPreviewTileSize(_p1.groupType);
+            var drawingState = model.drawingState;
             return _U.update(model,
             {redoStack: newHistory
-            ,patternState: _p0._0
-            ,undoStack: A2($List._op["::"],actualState,undoStack)});
+            ,patternState: _p1
+            ,undoStack: A2($List._op["::"],actualState,undoStack)
+            ,drawingState: _U.update(drawingState,
+            {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
+            _p1.rasterSize,
+            $WallpaperGroup$Pattern.bounding(A3($Editor$Util$Groups.getGroup,
+            _p1.groupType,
+            previewGroupSize,
+            previewGroupSize)))})});
          } else {
             return model;
          }
@@ -12490,14 +12568,24 @@ Elm.Editor.Util.History.make = function (_elm) {
       var undoStack = model.undoStack;
       var actualState = model.patternState;
       var lastState = $List.head(model.undoStack);
-      var _p1 = lastState;
-      if (_p1.ctor === "Just") {
+      var _p2 = lastState;
+      if (_p2.ctor === "Just") {
+            var _p3 = _p2._0;
+            var previewGroupSize = $Editor$Util$TileSize.getPreviewTileSize(_p3.groupType);
+            var drawingState = model.drawingState;
             return _U.update(model,
             {undoStack: A2($Maybe.withDefault,
             _U.list([]),
             $List.tail(undoStack))
-            ,patternState: _p1._0
-            ,redoStack: A2($List._op["::"],actualState,redoStack)});
+            ,patternState: _p3
+            ,redoStack: A2($List._op["::"],actualState,redoStack)
+            ,drawingState: _U.update(drawingState,
+            {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
+            _p3.rasterSize,
+            $WallpaperGroup$Pattern.bounding(A3($Editor$Util$Groups.getGroup,
+            _p3.groupType,
+            previewGroupSize,
+            previewGroupSize)))})});
          } else {
             return model;
          }
@@ -12822,6 +12910,7 @@ Elm.Editor.Action.make = function (_elm) {
    $Editor$Types = Elm.Editor.Types.make(_elm),
    $Editor$Util$Color = Elm.Editor.Util.Color.make(_elm),
    $Editor$Util$Geom = Elm.Editor.Util.Geom.make(_elm),
+   $Editor$Util$Groups = Elm.Editor.Util.Groups.make(_elm),
    $Editor$Util$History = Elm.Editor.Util.History.make(_elm),
    $Editor$Util$Pattern = Elm.Editor.Util.Pattern.make(_elm),
    $Editor$Util$Raster = Elm.Editor.Util.Raster.make(_elm),
@@ -12833,7 +12922,6 @@ Elm.Editor.Action.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $Task = Elm.Task.make(_elm),
-   $WallpaperGroup$Group = Elm.WallpaperGroup.Group.make(_elm),
    $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
    var _op = {};
    var getRandom = F3(function (seed,min,max) {
@@ -12862,45 +12950,6 @@ Elm.Editor.Action.make = function (_elm) {
                      i1,
                      $Array.fromList(points)))
                      ,getValue(A2($Array.get,i2,$Array.fromList(points)))]);
-   });
-   var getGroup = F3(function (groupType,height,width) {
-      return _U.eq(groupType,"P1") ? A2($WallpaperGroup$Group.P1,
-      width,
-      height) : _U.eq(groupType,"P2") ? A2($WallpaperGroup$Group.P2,
-      width,
-      height) : _U.eq(groupType,"Pm") ? A2($WallpaperGroup$Group.Pm,
-      width,
-      height) : _U.eq(groupType,"Pg") ? A2($WallpaperGroup$Group.Pg,
-      width,
-      height) : _U.eq(groupType,"Cm") ? A2($WallpaperGroup$Group.Cm,
-      width,
-      height) : _U.eq(groupType,
-      "P2mm") ? A2($WallpaperGroup$Group.P2mm,
-      width,
-      height) : _U.eq(groupType,
-      "P2mg") ? A2($WallpaperGroup$Group.P2mg,
-      width,
-      height) : _U.eq(groupType,
-      "P2gg") ? A2($WallpaperGroup$Group.P2gg,
-      width,
-      height) : _U.eq(groupType,
-      "C2mm") ? A2($WallpaperGroup$Group.C2mm,
-      width,
-      height) : _U.eq(groupType,"P4") ? A2($WallpaperGroup$Group.P4,
-      width,
-      height) : _U.eq(groupType,
-      "P4mm") ? A2($WallpaperGroup$Group.P4mm,
-      width,
-      height) : _U.eq(groupType,
-      "P4mg") ? A2($WallpaperGroup$Group.P4mg,
-      width,
-      height) : _U.eq(groupType,
-      "P3") ? $WallpaperGroup$Group.P3(width) : _U.eq(groupType,
-      "P3m1") ? $WallpaperGroup$Group.P3m1(width) : _U.eq(groupType,
-      "P31m") ? $WallpaperGroup$Group.P31m(width) : _U.eq(groupType,
-      "P6") ? $WallpaperGroup$Group.P6(width) : A2($WallpaperGroup$Group.P1,
-      width,
-      height);
    });
    var UpadtePattern = {ctor: "UpadtePattern"};
    var ClosePallete = {ctor: "ClosePallete"};
@@ -12995,7 +13044,7 @@ Elm.Editor.Action.make = function (_elm) {
          case "Group": var _p4 = _p3._0;
            var groupSize = $Editor$Util$TileSize.getTileSize(_p4);
            var previewGroupSize = $Editor$Util$TileSize.getPreviewTileSize(_p4);
-           var previewGroup = A3(getGroup,
+           var previewGroup = A3($Editor$Util$Groups.getGroup,
            _p4,
            previewGroupSize,
            previewGroupSize);
@@ -13004,14 +13053,14 @@ Elm.Editor.Action.make = function (_elm) {
            return {ctor: "_Tuple2"
                   ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
                   {patternState: _U.update(patternState,
-                  {group: A3(getGroup,_p4,groupSize,groupSize)
+                  {group: A3($Editor$Util$Groups.getGroup,_p4,groupSize,groupSize)
                   ,previewGroup: previewGroup
                   ,groupType: _p4
                   ,boundingBox: boundingBox})
                   ,drawingState: _U.update(drawingState,
                   {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
                   patternState.rasterSize,
-                  $WallpaperGroup$Pattern.bounding(A3(getGroup,
+                  $WallpaperGroup$Pattern.bounding(A3($Editor$Util$Groups.getGroup,
                   _p4,
                   previewGroupSize,
                   previewGroupSize)))})}))
@@ -13026,7 +13075,7 @@ Elm.Editor.Action.make = function (_elm) {
                   ,drawingState: _U.update(drawingState,
                   {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
                   _p5,
-                  $WallpaperGroup$Pattern.bounding(A3(getGroup,
+                  $WallpaperGroup$Pattern.bounding(A3($Editor$Util$Groups.getGroup,
                   patternState.groupType,
                   previewGroupSize,
                   previewGroupSize)))})}))
@@ -13175,7 +13224,6 @@ Elm.Editor.Action.make = function (_elm) {
                                       ,TogglePallete: TogglePallete
                                       ,ClosePallete: ClosePallete
                                       ,UpadtePattern: UpadtePattern
-                                      ,getGroup: getGroup
                                       ,getRandom: getRandom
                                       ,getRandomCoord: getRandomCoord
                                       ,update: update};
@@ -15666,7 +15714,10 @@ Elm.Editor.Ui.Slider.make = function (_elm) {
       var _p2 = _p1.value;
       return A2($Html.div,
       _U.list([]),
-      _U.list([A2($Html.input,
+      _U.list([A2($Html.label,
+              _U.list([]),
+              _U.list([$Html.text(_p1.name)]))
+              ,A2($Html.input,
               _U.list([A3($Html$Events.on,
                       "input",
                       $Html$Events.targetValue,
@@ -15680,8 +15731,13 @@ Elm.Editor.Ui.Slider.make = function (_elm) {
               _U.list([]))
               ,A2($Html.span,_U.list([]),_U.list([$Html.text(_p2)]))]));
    };
-   var SliderSettings = F5(function (a,b,c,d,e) {
-      return {min: a,max: b,value: c,address: d,createAction: e};
+   var SliderSettings = F6(function (a,b,c,d,e,f) {
+      return {name: a
+             ,min: b
+             ,max: c
+             ,value: d
+             ,address: e
+             ,createAction: f};
    });
    return _elm.Editor.Ui.Slider.values = {_op: _op
                                          ,SliderSettings: SliderSettings
@@ -16992,6 +17048,7 @@ Elm.Editor.View.make = function (_elm) {
                       patternState.boundingBox,
                       address)
                       ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.rasterSize)
+                                                ,name: "Raster"
                                                 ,min: "1"
                                                 ,max: "20"
                                                 ,address: address
@@ -16999,6 +17056,7 @@ Elm.Editor.View.make = function (_elm) {
                                                    return $Editor$Action.RasterSize($Editor$Util$Convert.toFloat(str));
                                                 }})
                       ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.columns)
+                                                ,name: "Columns"
                                                 ,min: "1"
                                                 ,max: "20"
                                                 ,address: address
@@ -17006,6 +17064,7 @@ Elm.Editor.View.make = function (_elm) {
                                                    return $Editor$Action.Columns($Editor$Util$Convert.toInt(str));
                                                 }})
                       ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.rows)
+                                                ,name: "Rows"
                                                 ,min: "1"
                                                 ,max: "20"
                                                 ,address: address
@@ -17013,6 +17072,7 @@ Elm.Editor.View.make = function (_elm) {
                                                    return $Editor$Action.Rows($Editor$Util$Convert.toInt(str));
                                                 }})
                       ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.noiseX)
+                                                ,name: "Noise x"
                                                 ,min: "1"
                                                 ,max: "100"
                                                 ,address: address
@@ -17020,6 +17080,7 @@ Elm.Editor.View.make = function (_elm) {
                                                    return $Editor$Action.NoiseX($Editor$Util$Convert.toInt(str));
                                                 }})
                       ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.noiseY)
+                                                ,name: "Noise y"
                                                 ,min: "1"
                                                 ,max: "100"
                                                 ,address: address
@@ -17027,6 +17088,7 @@ Elm.Editor.View.make = function (_elm) {
                                                    return $Editor$Action.NoiseY($Editor$Util$Convert.toInt(str));
                                                 }})
                       ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.noiseZ)
+                                                ,name: "Noise z"
                                                 ,min: "1"
                                                 ,max: "100"
                                                 ,address: address
@@ -17034,6 +17096,7 @@ Elm.Editor.View.make = function (_elm) {
                                                    return $Editor$Action.NoiseZ($Editor$Util$Convert.toInt(str));
                                                 }})
                       ,$Editor$Ui$Slider.slider({value: $Basics.toString(patternState.noiseDesctruction)
+                                                ,name: "Distortion"
                                                 ,min: "0"
                                                 ,max: "100"
                                                 ,address: address

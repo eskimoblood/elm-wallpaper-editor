@@ -109,6 +109,11 @@ a {
   clear: left;
   border-top: solid 1px #E4E4DE;
 }
+label {
+  font-family: 'PT Mono';
+  position: absolute;
+  font-size: 9px;
+}
 input[type=range] {
   margin: 10px 1px 9px 0;
   -webkit-appearance: none;

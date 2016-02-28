@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes as Attr
 import Html.Events exposing (on, targetValue)
 import Editor.Ui.Slider exposing (slider)
+import Editor.Ui.Header exposing (header)
 import Editor.Ui.GroupSelect exposing (groupSelect)
 import Editor.Ui.Raster exposing (raster)
 import Editor.Ui.ColorFinder exposing (colorFinder)
@@ -31,7 +32,8 @@ view address model =
             [ div
                 [ Attr.class "sidebar"
                 ]
-                [ groupSelect patternState.groupType address
+                [ Editor.Ui.Header.header "Pattern"
+                , groupSelect patternState.groupType address
                 , colorFinder address model.colorState
                 , raster drawingState patternState.tile patternState.previewGroup patternState.boundingBox address
                 , slider

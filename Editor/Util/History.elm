@@ -12,7 +12,7 @@ addHistory model =
     let
         actualState = model.patternState
 
-        undoStack = model.undoStack
+        undoStack = List.take 100 model.undoStack
     in
         { model
             | undoStack = actualState :: undoStack

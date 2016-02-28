@@ -89,28 +89,32 @@ preview model =
         g [] childs
 
 
-sendMousePosition : ((Point -> Action) -> Point -> Signal.Message) -> (Point -> Action) -> ( Point, Bool ) -> Signal.Message
-sendMousePosition sendAction action mouseData =
-    sendAction action (fst mouseData)
+onMouseMove : Signal.Address Action -> ( Point, Bool )  -> Signal.Message
+onMouseMove address   mouseData =
+    sendTo address LineMove (fst mouseData)
 
 
-sendMousePositionOrDelete : ((Point -> Action) -> Point -> Signal.Message) -> ( Point, Bool ) -> Signal.Message
-sendMousePositionOrDelete sendAction mouseData =
+onMouseDown :  Signal.Address Action -> ( Point, Bool ) -> Signal.Message
+onMouseDown address mouseData =
     if (snd mouseData) then
-        sendAction DeleteLine (fst mouseData)
+        sendTo address DeleteLine (fst mouseData)
     else
-        sendAction LineStart (fst mouseData)
+        sendTo address LineStart (fst mouseData)
+
+onMouseUp :  Signal.Address Action -> ( Point, Bool ) -> Signal.Message
+onMouseUp address mouseData =
+    if (snd mouseData) then
+        Signal.message address NoOp
+    else
+        sendTo address LineEnd (fst mouseData)
 
 
 raster : DrawingState -> Tile -> Group -> BoundingBox -> Signal.Address Action -> Html
 raster model tile group boundingBox address =
-    let
-        sendAction = sendTo address
-    in
         div
-            [ on "mousedown" mousePosition (sendMousePositionOrDelete sendAction)
-            , on "mousemove" mousePosition (sendMousePosition sendAction LineMove)
-            , on "mouseup" mousePosition (sendMousePosition sendAction LineEnd)
+            [ on "mousedown" mousePosition (onMouseDown address)
+            , on "mousemove" mousePosition (onMouseMove address )
+            , on "mouseup" mousePosition (onMouseUp address)
             , Attr.class "drawingArea"
             ]
             [ Svg.svg

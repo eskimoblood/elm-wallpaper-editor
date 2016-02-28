@@ -1,6 +1,7 @@
 module Editor.Ui.PatternStage (..) where
 
 import Svg exposing (..)
+import Html exposing (div)
 import Svg.Attributes as Attr exposing (..)
 import Editor.Types exposing (Tile, Point, MultiLine, Bezier)
 import Editor.Util.Svg exposing (lineToAttribute, renderTiles, pointToString)
@@ -50,12 +51,55 @@ renderTile tile =
 renderColorizedNoisyTiles : List (List Bezier) -> Svg
 renderColorizedNoisyTiles tiles =
     Svg.g
-        []
+        [ id "stage" ]
         (List.map renderTile tiles)
 
 
 stage : List (List Bezier) -> Svg
 stage model =
-    svg
-        [ version "1.1", x "0", y "0" ]
-        [ renderColorizedNoisyTiles model ]
+    div
+        []
+        [ svg
+            [ version "1.1"
+            , x "0"
+            , y "0"
+            ]
+            [ renderColorizedNoisyTiles model
+
+            ]
+        , svg
+            [id "filter-container"]
+            [ defs
+                []
+                [ Svg.filter
+                    [ id "filter" ]
+                    [ feImage
+                        [ xlinkHref "#stage"
+                        , x "0"
+                        , y "0"
+                        , width "100"
+                        , height "100"
+                        , result "IMAGEFILL"
+                        ]
+                        []
+                    , feTile
+                        [ in' "IMAGEFILL"
+                        , result "TILEPATTERN"
+                        ]
+                        []
+                    , feFlood [ floodColor "#ffffff", result "BG-COLOR" ] []
+                    , feMerge
+                        [ result "BG-PATTERN" ]
+                        [ feMergeNode [in' "BG-COLOR"][]
+                        , feMergeNode [in' "TILEPATTERN"][]
+                        ]
+                    , feComposite
+                        [ operator "in"
+                        , in' "BG-PATTERN"
+                        , in2 "SourceAlpha"
+                        ]
+                        []
+                    ]
+                ]
+            ]
+        ]

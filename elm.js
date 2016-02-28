@@ -12054,7 +12054,7 @@ Elm.Editor.Model.make = function (_elm) {
                              ,noiseX: 10
                              ,noiseY: 10
                              ,noiseZ: 10
-                             ,noiseDesctruction: 5
+                             ,noiseDesctruction: 0
                              ,groupType: "P4"
                              ,rasterSize: 4
                              ,boundingBox: $WallpaperGroup$Pattern.bounding(A2($WallpaperGroup$Group.P4,
@@ -12398,7 +12398,7 @@ Elm.Editor.Util.Pattern.make = function (_elm) {
              ,c2: c2
              ,color: color
              ,opacity: 1
-             ,strokeWidth: $Basics.abs($Basics.sin(_p12)) * 2};
+             ,strokeWidth: $Basics.abs($Basics.sin(_p12)) * 4};
    });
    var calcTile = F3(function (noiseDesctruction,colors,tile) {
       var lines = A2($List.filter,
@@ -12591,7 +12591,7 @@ Elm.Editor.Util.History.make = function (_elm) {
          }
    };
    var addHistory = function (model) {
-      var undoStack = model.undoStack;
+      var undoStack = A2($List.take,100,model.undoStack);
       var actualState = model.patternState;
       return _U.update(model,
       {undoStack: A2($List._op["::"],actualState,undoStack)
@@ -12997,6 +12997,7 @@ Elm.Editor.Action.make = function (_elm) {
    };
    var NoOp = {ctor: "NoOp"};
    var update = F2(function (action,model) {
+      var a = A2($Debug.log,"action",action);
       var colorState = model.colorState;
       var drawingState = model.drawingState;
       var patternState = model.patternState;
@@ -13114,7 +13115,7 @@ Elm.Editor.Action.make = function (_elm) {
                         ,_1: $Effects.none};
               } else return {ctor: "_Tuple2",_0: model,_1: $Effects.none};
          case "DeleteLine": var tile = A2($List.filter,
-           A2($Editor$Util$Geom.lineIsNearPoint,_p3._0,5),
+           A2($Editor$Util$Geom.lineIsNearPoint,_p3._0,10),
            patternState.tile);
            var model = $Editor$Util$History.addHistory(model);
            return {ctor: "_Tuple2"
@@ -15743,65 +15744,6 @@ Elm.Editor.Ui.Slider.make = function (_elm) {
                                          ,SliderSettings: SliderSettings
                                          ,slider: slider};
 };
-Elm.Editor = Elm.Editor || {};
-Elm.Editor.Ui = Elm.Editor.Ui || {};
-Elm.Editor.Ui.GroupSelect = Elm.Editor.Ui.GroupSelect || {};
-Elm.Editor.Ui.GroupSelect.make = function (_elm) {
-   "use strict";
-   _elm.Editor = _elm.Editor || {};
-   _elm.Editor.Ui = _elm.Editor.Ui || {};
-   _elm.Editor.Ui.GroupSelect = _elm.Editor.Ui.GroupSelect || {};
-   if (_elm.Editor.Ui.GroupSelect.values)
-   return _elm.Editor.Ui.GroupSelect.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Basics = Elm.Basics.make(_elm),
-   $Debug = Elm.Debug.make(_elm),
-   $Editor$Action = Elm.Editor.Action.make(_elm),
-   $Html = Elm.Html.make(_elm),
-   $Html$Attributes = Elm.Html.Attributes.make(_elm),
-   $Html$Events = Elm.Html.Events.make(_elm),
-   $List = Elm.List.make(_elm),
-   $Maybe = Elm.Maybe.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm);
-   var _op = {};
-   var createOption = F2(function (selected,value) {
-      return A2($Html.option,
-      _U.list([$Html$Attributes.value(value)
-              ,$Html$Attributes.selected(_U.eq(value,selected))]),
-      _U.list([$Html.text(value)]));
-   });
-   var groupTypes = _U.list(["P1"
-                            ,"P2"
-                            ,"Pm"
-                            ,"Pg"
-                            ,"Cm"
-                            ,"P2mm"
-                            ,"P2mg"
-                            ,"P2gg"
-                            ,"C2mm"
-                            ,"P4"
-                            ,"P4mm"
-                            ,"P4mg"
-                            ,"P3"
-                            ,"P3m1"
-                            ,"P31m"
-                            ,"P6"]);
-   var groupSelect = F2(function (selected,address) {
-      return A2($Html.select,
-      _U.list([A3($Html$Events.on,
-      "change",
-      $Html$Events.targetValue,
-      function (str) {
-         return A2($Signal.message,address,$Editor$Action.Group(str));
-      })]),
-      A2($List.map,createOption(selected),groupTypes));
-   });
-   return _elm.Editor.Ui.GroupSelect.values = {_op: _op
-                                              ,groupTypes: groupTypes
-                                              ,createOption: createOption
-                                              ,groupSelect: groupSelect};
-};
 Elm.Svg = Elm.Svg || {};
 Elm.Svg.make = function (_elm) {
    "use strict";
@@ -16539,6 +16481,95 @@ Elm.Svg.Attributes.make = function (_elm) {
                                        ,writingMode: writingMode};
 };
 Elm.Editor = Elm.Editor || {};
+Elm.Editor.Ui = Elm.Editor.Ui || {};
+Elm.Editor.Ui.Header = Elm.Editor.Ui.Header || {};
+Elm.Editor.Ui.Header.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Ui = _elm.Editor.Ui || {};
+   _elm.Editor.Ui.Header = _elm.Editor.Ui.Header || {};
+   if (_elm.Editor.Ui.Header.values)
+   return _elm.Editor.Ui.Header.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Svg = Elm.Svg.make(_elm),
+   $Svg$Attributes = Elm.Svg.Attributes.make(_elm);
+   var _op = {};
+   var header = function (t) {
+      return A2($Svg.svg,
+      _U.list([$Svg$Attributes.height("50")]),
+      _U.list([A2($Svg.text$,
+      _U.list([$Svg$Attributes.fill("white")
+              ,$Svg$Attributes.y("40")]),
+      _U.list([$Svg.text(t)]))]));
+   };
+   return _elm.Editor.Ui.Header.values = {_op: _op,header: header};
+};
+Elm.Editor = Elm.Editor || {};
+Elm.Editor.Ui = Elm.Editor.Ui || {};
+Elm.Editor.Ui.GroupSelect = Elm.Editor.Ui.GroupSelect || {};
+Elm.Editor.Ui.GroupSelect.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Ui = _elm.Editor.Ui || {};
+   _elm.Editor.Ui.GroupSelect = _elm.Editor.Ui.GroupSelect || {};
+   if (_elm.Editor.Ui.GroupSelect.values)
+   return _elm.Editor.Ui.GroupSelect.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Editor$Action = Elm.Editor.Action.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Html$Attributes = Elm.Html.Attributes.make(_elm),
+   $Html$Events = Elm.Html.Events.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var createOption = F2(function (selected,value) {
+      return A2($Html.option,
+      _U.list([$Html$Attributes.value(value)
+              ,$Html$Attributes.selected(_U.eq(value,selected))]),
+      _U.list([$Html.text(value)]));
+   });
+   var groupTypes = _U.list(["P1"
+                            ,"P2"
+                            ,"Pm"
+                            ,"Pg"
+                            ,"Cm"
+                            ,"P2mm"
+                            ,"P2mg"
+                            ,"P2gg"
+                            ,"C2mm"
+                            ,"P4"
+                            ,"P4mm"
+                            ,"P4mg"
+                            ,"P3"
+                            ,"P3m1"
+                            ,"P31m"
+                            ,"P6"]);
+   var groupSelect = F2(function (selected,address) {
+      return A2($Html.select,
+      _U.list([A3($Html$Events.on,
+      "change",
+      $Html$Events.targetValue,
+      function (str) {
+         return A2($Signal.message,address,$Editor$Action.Group(str));
+      })]),
+      A2($List.map,createOption(selected),groupTypes));
+   });
+   return _elm.Editor.Ui.GroupSelect.values = {_op: _op
+                                              ,groupTypes: groupTypes
+                                              ,createOption: createOption
+                                              ,groupSelect: groupSelect};
+};
+Elm.Editor = Elm.Editor || {};
 Elm.Editor.Util = Elm.Editor.Util || {};
 Elm.Editor.Util.Svg = Elm.Editor.Util.Svg || {};
 Elm.Editor.Util.Svg.make = function (_elm) {
@@ -16656,19 +16687,6 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
    $WallpaperGroup$Geom$BoundingBox = Elm.WallpaperGroup.Geom.BoundingBox.make(_elm),
    $WallpaperGroup$Group = Elm.WallpaperGroup.Group.make(_elm);
    var _op = {};
-   var sendMousePositionOrDelete = F2(function (sendAction,
-   mouseData) {
-      return $Basics.snd(mouseData) ? A2(sendAction,
-      $Editor$Action.DeleteLine,
-      $Basics.fst(mouseData)) : A2(sendAction,
-      $Editor$Action.LineStart,
-      $Basics.fst(mouseData));
-   });
-   var sendMousePosition = F3(function (sendAction,
-   action,
-   mouseData) {
-      return A2(sendAction,action,$Basics.fst(mouseData));
-   });
    var preview = function (model) {
       var childs = model.isDrawing ? _U.list([A2($Svg.line,
       _U.list([$Svg$Attributes.x1($Basics.toString(model.lineStart.x))
@@ -16681,6 +16699,29 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
    };
    var sendTo = F3(function (address,action,point) {
       return A2($Signal.message,address,action(point));
+   });
+   var onMouseMove = F2(function (address,mouseData) {
+      return A3(sendTo,
+      address,
+      $Editor$Action.LineMove,
+      $Basics.fst(mouseData));
+   });
+   var onMouseDown = F2(function (address,mouseData) {
+      return $Basics.snd(mouseData) ? A3(sendTo,
+      address,
+      $Editor$Action.DeleteLine,
+      $Basics.fst(mouseData)) : A3(sendTo,
+      address,
+      $Editor$Action.LineStart,
+      $Basics.fst(mouseData));
+   });
+   var onMouseUp = F2(function (address,mouseData) {
+      return $Basics.snd(mouseData) ? A2($Signal.message,
+      address,
+      $Editor$Action.NoOp) : A3(sendTo,
+      address,
+      $Editor$Action.LineEnd,
+      $Basics.fst(mouseData));
    });
    var mousePosition = A4($Json$Decode.object3,
    F3(function (x,y,altKeyPressed) {
@@ -16733,20 +16774,16 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
    group,
    boundingBox,
    address) {
-      var sendAction = sendTo(address);
       return A2($Html.div,
       _U.list([A3($Html$Events.on,
               "mousedown",
               mousePosition,
-              sendMousePositionOrDelete(sendAction))
+              onMouseDown(address))
               ,A3($Html$Events.on,
               "mousemove",
               mousePosition,
-              A2(sendMousePosition,sendAction,$Editor$Action.LineMove))
-              ,A3($Html$Events.on,
-              "mouseup",
-              mousePosition,
-              A2(sendMousePosition,sendAction,$Editor$Action.LineEnd))
+              onMouseMove(address))
+              ,A3($Html$Events.on,"mouseup",mousePosition,onMouseUp(address))
               ,$Html$Attributes.$class("drawingArea")]),
       _U.list([A2($Svg.svg,
       _U.list([$Svg$Attributes.version("1.1")
@@ -16775,8 +16812,9 @@ Elm.Editor.Ui.Raster.make = function (_elm) {
                                          ,mousePosition: mousePosition
                                          ,sendTo: sendTo
                                          ,preview: preview
-                                         ,sendMousePosition: sendMousePosition
-                                         ,sendMousePositionOrDelete: sendMousePositionOrDelete
+                                         ,onMouseMove: onMouseMove
+                                         ,onMouseDown: onMouseDown
+                                         ,onMouseUp: onMouseUp
                                          ,raster: raster};
 };
 Elm.Editor = Elm.Editor || {};
@@ -16936,6 +16974,7 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
    $Debug = Elm.Debug.make(_elm),
    $Editor$Types = Elm.Editor.Types.make(_elm),
    $Editor$Util$Svg = Elm.Editor.Util.Svg.make(_elm),
+   $Html = Elm.Html.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
@@ -16976,14 +17015,53 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
       return A2($Svg.g,_U.list([]),A2($List.map,renderPath,tile));
    };
    var renderColorizedNoisyTiles = function (tiles) {
-      return A2($Svg.g,_U.list([]),A2($List.map,renderTile,tiles));
+      return A2($Svg.g,
+      _U.list([$Svg$Attributes.id("stage")]),
+      A2($List.map,renderTile,tiles));
    };
    var stage = function (model) {
-      return A2($Svg.svg,
-      _U.list([$Svg$Attributes.version("1.1")
-              ,$Svg$Attributes.x("0")
-              ,$Svg$Attributes.y("0")]),
-      _U.list([renderColorizedNoisyTiles(model)]));
+      return A2($Html.div,
+      _U.list([]),
+      _U.list([A2($Svg.svg,
+              _U.list([$Svg$Attributes.version("1.1")
+                      ,$Svg$Attributes.x("0")
+                      ,$Svg$Attributes.y("0")]),
+              _U.list([renderColorizedNoisyTiles(model)]))
+              ,A2($Svg.svg,
+              _U.list([$Svg$Attributes.id("filter-container")]),
+              _U.list([A2($Svg.defs,
+              _U.list([]),
+              _U.list([A2($Svg.filter,
+              _U.list([$Svg$Attributes.id("filter")]),
+              _U.list([A2($Svg.feImage,
+                      _U.list([$Svg$Attributes.xlinkHref("#stage")
+                              ,$Svg$Attributes.x("0")
+                              ,$Svg$Attributes.y("0")
+                              ,$Svg$Attributes.width("100")
+                              ,$Svg$Attributes.height("100")
+                              ,$Svg$Attributes.result("IMAGEFILL")]),
+                      _U.list([]))
+                      ,A2($Svg.feTile,
+                      _U.list([$Svg$Attributes.in$("IMAGEFILL")
+                              ,$Svg$Attributes.result("TILEPATTERN")]),
+                      _U.list([]))
+                      ,A2($Svg.feFlood,
+                      _U.list([$Svg$Attributes.floodColor("#ffffff")
+                              ,$Svg$Attributes.result("BG-COLOR")]),
+                      _U.list([]))
+                      ,A2($Svg.feMerge,
+                      _U.list([$Svg$Attributes.result("BG-PATTERN")]),
+                      _U.list([A2($Svg.feMergeNode,
+                              _U.list([$Svg$Attributes.in$("BG-COLOR")]),
+                              _U.list([]))
+                              ,A2($Svg.feMergeNode,
+                              _U.list([$Svg$Attributes.in$("TILEPATTERN")]),
+                              _U.list([]))]))
+                      ,A2($Svg.feComposite,
+                      _U.list([$Svg$Attributes.operator("in")
+                              ,$Svg$Attributes.in$("BG-PATTERN")
+                              ,$Svg$Attributes.in2("SourceAlpha")]),
+                      _U.list([]))]))]))]))]));
    };
    var renderLine = function (_p6) {
       var _p7 = _p6;
@@ -17015,6 +17093,7 @@ Elm.Editor.View.make = function (_elm) {
    $Editor$Model = Elm.Editor.Model.make(_elm),
    $Editor$Ui$ColorFinder = Elm.Editor.Ui.ColorFinder.make(_elm),
    $Editor$Ui$GroupSelect = Elm.Editor.Ui.GroupSelect.make(_elm),
+   $Editor$Ui$Header = Elm.Editor.Ui.Header.make(_elm),
    $Editor$Ui$PatternStage = Elm.Editor.Ui.PatternStage.make(_elm),
    $Editor$Ui$Raster = Elm.Editor.Ui.Raster.make(_elm),
    $Editor$Ui$Slider = Elm.Editor.Ui.Slider.make(_elm),
@@ -17037,7 +17116,8 @@ Elm.Editor.View.make = function (_elm) {
               ,$Html$Attributes.id("String")]),
       _U.list([A2($Html.div,
               _U.list([$Html$Attributes.$class("sidebar")]),
-              _U.list([A2($Editor$Ui$GroupSelect.groupSelect,
+              _U.list([$Editor$Ui$Header.header("Pattern")
+                      ,A2($Editor$Ui$GroupSelect.groupSelect,
                       patternState.groupType,
                       address)
                       ,A2($Editor$Ui$ColorFinder.colorFinder,address,model.colorState)

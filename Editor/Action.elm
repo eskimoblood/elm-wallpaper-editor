@@ -88,6 +88,8 @@ update action model =
         drawingState = model.drawingState
 
         colorState = model.colorState
+
+        a = Debug.log "action" action
     in
         case action of
             NoOp ->
@@ -225,7 +227,7 @@ update action model =
                 let
                     model = addHistory model
 
-                    tile = List.filter (lineIsNearPoint mousePosition 5) patternState.tile
+                    tile = List.filter (lineIsNearPoint mousePosition 10) patternState.tile
                 in
                     ( updatePatternInModel
                         { model

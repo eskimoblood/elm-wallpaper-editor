@@ -61,7 +61,7 @@ initialPatternState =
     , noiseX = 10
     , noiseY = 10
     , noiseZ = 10
-    , noiseDesctruction = 5
+    , noiseDesctruction = 0
     , groupType = "P4"
     , rasterSize = 4
     , boundingBox = Pattern.bounding (P4 150 150)
@@ -91,6 +91,7 @@ initialColorState =
     , loading = False
     , paletteOpen = False
     }
+
 
 
 initialModel : Model

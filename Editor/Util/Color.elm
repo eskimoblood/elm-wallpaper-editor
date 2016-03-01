@@ -7,10 +7,8 @@ import Color.Interpolate exposing (..)
 
 toGradient : List String -> List String
 toGradient l =
-    Debug.log
-        "colors"
-        (List.map hexToColor l
-            |> List.filterMap identity
-        )
+    (List.map hexToColor l
+        |> List.filterMap identity
+    )
         |> (flip (gradient LAB)) 20
         |> List.map colorToCssRgb

@@ -8,6 +8,7 @@ import Editor.Ui.Header exposing (header)
 import Editor.Ui.GroupSelect exposing (groupSelect)
 import Editor.Ui.Raster exposing (raster)
 import Editor.Ui.ColorFinder exposing (colorFinder)
+import Editor.Ui.Help exposing (help)
 import Editor.Util.Convert as Convert
 import Editor.Ui.PatternStage exposing (stage)
 import Editor.Model exposing (Model)
@@ -29,12 +30,15 @@ view address model =
             [ Attr.class "row"
             , Attr.id "String"
             ]
-            [ div
+            ([ div
                 [ Attr.class "sidebar"
                 ]
                 [ Editor.Ui.Header.header "Pattern"
-                , groupSelect patternState.groupType address
-                , colorFinder address model.colorState
+                , div
+                    []
+                    [ groupSelect patternState.groupType address
+                    , colorFinder address model.colorState
+                    ]
                 , raster drawingState patternState.tile patternState.previewGroup patternState.boundingBox address
                 , slider
                     { value = (toString patternState.rasterSize)
@@ -92,27 +96,35 @@ view address model =
                     , address = address
                     , createAction = \str -> NoiseDesctruction (Convert.toInt str)
                     }
-                , button
-                    [ on "click" targetValue (\_ -> Signal.message address ClearTiles)
-                    ]
-                    [ Html.text "Clear"
-                    ]
-                , button
-                    [ on "click" targetValue (\_ -> Signal.message address Random)
-                    ]
-                    [ Html.text "Random"
-                    ]
-                , button
-                    [ on "click" targetValue (\_ -> Signal.message address Undo)
-                    , Attr.disabled undoDisabled
-                    ]
-                    [ Html.text "Undo"
-                    ]
-                , button
-                    [ on "click" targetValue (\_ -> Signal.message address Redo)
-                    , Attr.disabled redoDisabled
-                    ]
-                    [ Html.text "Redo"
+                , div
+                    []
+                    [ button
+                        [ on "click" targetValue (\_ -> Signal.message address ClearTiles)
+                        ]
+                        [ Html.text "Clear"
+                        ]
+                    , button
+                        [ on "click" targetValue (\_ -> Signal.message address Random)
+                        ]
+                        [ Html.text "Random"
+                        ]
+                    , button
+                        [ on "click" targetValue (\_ -> Signal.message address Undo)
+                        , Attr.disabled undoDisabled
+                        ]
+                        [ Html.text "Undo"
+                        ]
+                    , button
+                        [ on "click" targetValue (\_ -> Signal.message address Redo)
+                        , Attr.disabled redoDisabled
+                        ]
+                        [ Html.text "Redo"
+                        ]
+                    , button
+                        [ on "click" targetValue (\_ -> Signal.message address (ToggleHelp True))
+                        ]
+                        [ Html.text "?"
+                        ]
                     ]
                 ]
             , div
@@ -120,4 +132,4 @@ view address model =
                 ]
                 [ stage model.patternState.pattern
                 ]
-            ]
+            ] ++ (help model.showHelp address))

@@ -12046,23 +12046,19 @@ Elm.Editor.Model.make = function (_elm) {
                              ,isDrawing: false
                              ,rasterCoords: A2($Editor$Util$Raster.rasterCoords,
                              4,
-                             $WallpaperGroup$Pattern.bounding(A2($WallpaperGroup$Group.P1,
-                             150,
-                             150)))};
+                             $WallpaperGroup$Pattern.bounding($WallpaperGroup$Group.P3m1(172)))};
    var initialPatternState = {columns: 10
                              ,rows: 10
                              ,noiseX: 10
                              ,noiseY: 10
                              ,noiseZ: 10
                              ,noiseDesctruction: 0
-                             ,groupType: "P4"
+                             ,groupType: "P3m1"
                              ,rasterSize: 4
-                             ,boundingBox: $WallpaperGroup$Pattern.bounding(A2($WallpaperGroup$Group.P4,
-                             150,
-                             150))
+                             ,boundingBox: $WallpaperGroup$Pattern.bounding($WallpaperGroup$Group.P3m1(172))
                              ,tile: _U.list([])
-                             ,group: A2($WallpaperGroup$Group.P4,40,40)
-                             ,previewGroup: A2($WallpaperGroup$Group.P4,150,150)
+                             ,group: $WallpaperGroup$Group.P3m1(50)
+                             ,previewGroup: $WallpaperGroup$Group.P3m1(172)
                              ,noise: _U.list([])
                              ,pattern: _U.list([])};
    var initialModel = {patternState: initialPatternState
@@ -12070,14 +12066,16 @@ Elm.Editor.Model.make = function (_elm) {
                       ,colorState: initialColorState
                       ,seed: $Random.initialSeed(31415)
                       ,undoStack: _U.list([])
-                      ,redoStack: _U.list([])};
-   var Model = F6(function (a,b,c,d,e,f) {
+                      ,redoStack: _U.list([])
+                      ,showHelp: false};
+   var Model = F7(function (a,b,c,d,e,f,g) {
       return {patternState: a
              ,drawingState: b
              ,colorState: c
              ,undoStack: d
              ,redoStack: e
-             ,seed: f};
+             ,seed: f
+             ,showHelp: g};
    });
    var ColorState = F6(function (a,b,c,d,e,f) {
       return {colorSearch: a
@@ -12398,7 +12396,7 @@ Elm.Editor.Util.Pattern.make = function (_elm) {
              ,c2: c2
              ,color: color
              ,opacity: 1
-             ,strokeWidth: $Basics.abs($Basics.sin(_p12)) * 4};
+             ,strokeWidth: $Basics.abs($Basics.sin(_p12)) * 2};
    });
    var calcTile = F3(function (noiseDesctruction,colors,tile) {
       var lines = A2($List.filter,
@@ -12629,11 +12627,9 @@ Elm.Editor.Util.Color.make = function (_elm) {
       A3($Basics.flip,
       $Color$Gradient.gradient($Color$Interpolate.LAB),
       20,
-      A2($Debug.log,
-      "colors",
       A2($List.filterMap,
       $Basics.identity,
-      A2($List.map,$Color$Convert.hexToColor,l)))));
+      A2($List.map,$Color$Convert.hexToColor,l))));
    };
    return _elm.Editor.Util.Color.values = {_op: _op
                                           ,toGradient: toGradient};
@@ -12951,6 +12947,9 @@ Elm.Editor.Action.make = function (_elm) {
                      $Array.fromList(points)))
                      ,getValue(A2($Array.get,i2,$Array.fromList(points)))]);
    });
+   var ToggleHelp = function (a) {
+      return {ctor: "ToggleHelp",_0: a};
+   };
    var UpadtePattern = {ctor: "UpadtePattern"};
    var ClosePallete = {ctor: "ClosePallete"};
    var TogglePallete = function (a) {
@@ -12997,7 +12996,6 @@ Elm.Editor.Action.make = function (_elm) {
    };
    var NoOp = {ctor: "NoOp"};
    var update = F2(function (action,model) {
-      var a = A2($Debug.log,"action",action);
       var colorState = model.colorState;
       var drawingState = model.drawingState;
       var patternState = model.patternState;
@@ -13197,8 +13195,11 @@ Elm.Editor.Action.make = function (_elm) {
                                      ,_0: _U.update(model,
                                      {colorState: _U.update(colorState,{paletteOpen: false})})
                                      ,_1: $Effects.none};
+         case "UpadtePattern": return {ctor: "_Tuple2"
+                                      ,_0: $Editor$Util$Pattern.updatePatternInModel(model)
+                                      ,_1: $Effects.none};
          default: return {ctor: "_Tuple2"
-                         ,_0: $Editor$Util$Pattern.updatePatternInModel(model)
+                         ,_0: _U.update(model,{showHelp: _p3._0})
                          ,_1: $Effects.none};}
    });
    return _elm.Editor.Action.values = {_op: _op
@@ -13225,6 +13226,7 @@ Elm.Editor.Action.make = function (_elm) {
                                       ,TogglePallete: TogglePallete
                                       ,ClosePallete: ClosePallete
                                       ,UpadtePattern: UpadtePattern
+                                      ,ToggleHelp: ToggleHelp
                                       ,getRandom: getRandom
                                       ,getRandomCoord: getRandomCoord
                                       ,update: update};
@@ -16919,6 +16921,67 @@ Elm.Editor.Ui.ColorFinder.make = function (_elm) {
                                               ,colorFinder: colorFinder};
 };
 Elm.Editor = Elm.Editor || {};
+Elm.Editor.Ui = Elm.Editor.Ui || {};
+Elm.Editor.Ui.Help = Elm.Editor.Ui.Help || {};
+Elm.Editor.Ui.Help.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Ui = _elm.Editor.Ui || {};
+   _elm.Editor.Ui.Help = _elm.Editor.Ui.Help || {};
+   if (_elm.Editor.Ui.Help.values)
+   return _elm.Editor.Ui.Help.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Editor$Action = Elm.Editor.Action.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Html$Attributes = Elm.Html.Attributes.make(_elm),
+   $Html$Events = Elm.Html.Events.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var help = F2(function (showHelp,address) {
+      return showHelp ? _U.list([A2($Html.div,
+      _U.list([$Html$Attributes.$class("modal")]),
+      _U.list([A2($Html.div,
+      _U.list([]),
+      _U.list([A2($Html.p,
+              _U.list([]),
+              _U.list([$Html.text("Pattern editor based on ")
+                      ,A2($Html.a,
+                      _U.list([$Html$Attributes.href("https://en.wikipedia.org/wiki/Wallpaper_group")
+                              ,$Html$Attributes.target("_blank")]),
+                      _U.list([$Html.text("wallpaper groups")]))
+                      ,$Html.text(". The pattern are distorted with perlin noise, so its not possible to get predictable results. ")
+                      ,$Html.text("Draw lines in the raster section of the pattern. Lines can be deleted by alt-click. ")]))
+              ,A2($Html.p,
+              _U.list([]),
+              _U.list([$Html.text("Its written in Elm, the code is on ")
+                      ,A2($Html.a,
+                      _U.list([$Html$Attributes.href("https://github.com/eskimoblood/elm-wallpaper-editor")
+                              ,$Html$Attributes.target("_blank")]),
+                      _U.list([$Html.text("Github")]))
+                      ,$Html.text(". The color palettes search is powered by the ")
+                      ,A2($Html.a,
+                      _U.list([$Html$Attributes.href("http://www.colourlovers.com/api")
+                              ,$Html$Attributes.target("_blank")]),
+                      _U.list([$Html.text("COLOURlovers API")]))]))
+              ,A2($Html.button,
+              _U.list([A3($Html$Events.on,
+              "click",
+              $Html$Events.targetValue,
+              function (_p0) {
+                 return A2($Signal.message,
+                 address,
+                 $Editor$Action.ToggleHelp(false));
+              })]),
+              _U.list([$Html.text("Close")]))]))]))]) : _U.list([]);
+   });
+   return _elm.Editor.Ui.Help.values = {_op: _op,help: help};
+};
+Elm.Editor = Elm.Editor || {};
 Elm.Editor.Util = Elm.Editor.Util || {};
 Elm.Editor.Util.Convert = Elm.Editor.Util.Convert || {};
 Elm.Editor.Util.Convert.make = function (_elm) {
@@ -17036,9 +17099,7 @@ Elm.Editor.Ui.PatternStage.make = function (_elm) {
               _U.list([A2($Svg.feImage,
                       _U.list([$Svg$Attributes.xlinkHref("#stage")
                               ,$Svg$Attributes.x("0")
-                              ,$Svg$Attributes.y("0")
-                              ,$Svg$Attributes.width("100")
-                              ,$Svg$Attributes.height("100")
+                              ,$Svg$Attributes.y("-100")
                               ,$Svg$Attributes.result("IMAGEFILL")]),
                       _U.list([]))
                       ,A2($Svg.feTile,
@@ -17094,6 +17155,7 @@ Elm.Editor.View.make = function (_elm) {
    $Editor$Ui$ColorFinder = Elm.Editor.Ui.ColorFinder.make(_elm),
    $Editor$Ui$GroupSelect = Elm.Editor.Ui.GroupSelect.make(_elm),
    $Editor$Ui$Header = Elm.Editor.Ui.Header.make(_elm),
+   $Editor$Ui$Help = Elm.Editor.Ui.Help.make(_elm),
    $Editor$Ui$PatternStage = Elm.Editor.Ui.PatternStage.make(_elm),
    $Editor$Ui$Raster = Elm.Editor.Ui.Raster.make(_elm),
    $Editor$Ui$Slider = Elm.Editor.Ui.Slider.make(_elm),
@@ -17114,13 +17176,18 @@ Elm.Editor.View.make = function (_elm) {
       return A2($Html.div,
       _U.list([$Html$Attributes.$class("row")
               ,$Html$Attributes.id("String")]),
+      A2($Basics._op["++"],
       _U.list([A2($Html.div,
               _U.list([$Html$Attributes.$class("sidebar")]),
               _U.list([$Editor$Ui$Header.header("Pattern")
-                      ,A2($Editor$Ui$GroupSelect.groupSelect,
-                      patternState.groupType,
-                      address)
-                      ,A2($Editor$Ui$ColorFinder.colorFinder,address,model.colorState)
+                      ,A2($Html.div,
+                      _U.list([]),
+                      _U.list([A2($Editor$Ui$GroupSelect.groupSelect,
+                              patternState.groupType,
+                              address)
+                              ,A2($Editor$Ui$ColorFinder.colorFinder,
+                              address,
+                              model.colorState)]))
                       ,A5($Editor$Ui$Raster.raster,
                       drawingState,
                       patternState.tile,
@@ -17183,43 +17250,56 @@ Elm.Editor.View.make = function (_elm) {
                                                 ,createAction: function (str) {
                                                    return $Editor$Action.NoiseDesctruction($Editor$Util$Convert.toInt(str));
                                                 }})
-                      ,A2($Html.button,
-                      _U.list([A3($Html$Events.on,
-                      "click",
-                      $Html$Events.targetValue,
-                      function (_p0) {
-                         return A2($Signal.message,address,$Editor$Action.ClearTiles);
-                      })]),
-                      _U.list([$Html.text("Clear")]))
-                      ,A2($Html.button,
-                      _U.list([A3($Html$Events.on,
-                      "click",
-                      $Html$Events.targetValue,
-                      function (_p1) {
-                         return A2($Signal.message,address,$Editor$Action.Random);
-                      })]),
-                      _U.list([$Html.text("Random")]))
-                      ,A2($Html.button,
-                      _U.list([A3($Html$Events.on,
+                      ,A2($Html.div,
+                      _U.list([]),
+                      _U.list([A2($Html.button,
+                              _U.list([A3($Html$Events.on,
                               "click",
                               $Html$Events.targetValue,
-                              function (_p2) {
-                                 return A2($Signal.message,address,$Editor$Action.Undo);
-                              })
-                              ,$Html$Attributes.disabled(undoDisabled)]),
-                      _U.list([$Html.text("Undo")]))
-                      ,A2($Html.button,
-                      _U.list([A3($Html$Events.on,
+                              function (_p0) {
+                                 return A2($Signal.message,address,$Editor$Action.ClearTiles);
+                              })]),
+                              _U.list([$Html.text("Clear")]))
+                              ,A2($Html.button,
+                              _U.list([A3($Html$Events.on,
                               "click",
                               $Html$Events.targetValue,
-                              function (_p3) {
-                                 return A2($Signal.message,address,$Editor$Action.Redo);
-                              })
-                              ,$Html$Attributes.disabled(redoDisabled)]),
-                      _U.list([$Html.text("Redo")]))]))
+                              function (_p1) {
+                                 return A2($Signal.message,address,$Editor$Action.Random);
+                              })]),
+                              _U.list([$Html.text("Random")]))
+                              ,A2($Html.button,
+                              _U.list([A3($Html$Events.on,
+                                      "click",
+                                      $Html$Events.targetValue,
+                                      function (_p2) {
+                                         return A2($Signal.message,address,$Editor$Action.Undo);
+                                      })
+                                      ,$Html$Attributes.disabled(undoDisabled)]),
+                              _U.list([$Html.text("Undo")]))
+                              ,A2($Html.button,
+                              _U.list([A3($Html$Events.on,
+                                      "click",
+                                      $Html$Events.targetValue,
+                                      function (_p3) {
+                                         return A2($Signal.message,address,$Editor$Action.Redo);
+                                      })
+                                      ,$Html$Attributes.disabled(redoDisabled)]),
+                              _U.list([$Html.text("Redo")]))
+                              ,A2($Html.button,
+                              _U.list([A3($Html$Events.on,
+                              "click",
+                              $Html$Events.targetValue,
+                              function (_p4) {
+                                 return A2($Signal.message,
+                                 address,
+                                 $Editor$Action.ToggleHelp(true));
+                              })]),
+                              _U.list([$Html.text("?")]))]))]))
               ,A2($Html.div,
               _U.list([$Html$Attributes.$class("main")]),
-              _U.list([$Editor$Ui$PatternStage.stage(model.patternState.pattern)]))]));
+              _U.list([$Editor$Ui$PatternStage.stage(model.patternState.pattern)]))]),
+      A2($Editor$Ui$Help.help,model.showHelp,address)));
    });
    return _elm.Editor.View.values = {_op: _op,view: view};
 };

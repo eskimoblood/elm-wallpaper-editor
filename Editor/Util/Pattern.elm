@@ -66,7 +66,7 @@ calcPath noiseDesctruction colors ( noise, line ) =
         , c2 = c2
         , color = color
         , opacity = 1
-        , strokeWidth = abs (sin noise) * 4
+        , strokeWidth = abs (sin noise) * 2
         }
 
 

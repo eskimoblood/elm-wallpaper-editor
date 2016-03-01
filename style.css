@@ -4,7 +4,7 @@
 button {
   font-family: 'PT Mono';
   font-weight: 300;
-  margin: 15px 9px;
+  margin: 15px 5px;
   padding: 4px 10px;
   color: hsl(56, 96%, 55%);
   border: solid 1px;
@@ -35,14 +35,16 @@ button:disabled {
 }
 .sidebar {
   font-family: 'Montserrat', sans-serif;
-  display: block;
+  display: flex;
   width: 320px;
   height: 100%;
   margin-right: 10px;
   padding: 10px;
-  color: #c6c6c6;
-  background: #1e1e1e;
-  flex: none;
+  color: hsl(0, 0%, 78%);
+  background: hsl(0, 0%, 12%);
+  flex-direction: column;
+  min-height: 736px;
+  flex: 0;
 }
 .sidebar input + span {
   font-family: 'PT Mono';
@@ -101,14 +103,8 @@ h3:first-child {
   border: none;
 }
 a {
-  font-size: 11px;
-  display: block;
-  clear: left;
-  margin-top: 8px;
-  padding-top: 8px;
   text-decoration: none;
-  color: #a2d1ff;
-  border-top: solid 1px #e4e4de;
+  color: #fbed20;
 }
 label {
   font-family: 'PT Mono';
@@ -165,11 +161,7 @@ input[type='range']::-webkit-slider-thumb:after {
 .drawingArea .p1, .drawingArea .cm, .drawingArea .p2, .drawingArea .p2gg {
   margin-left: 70px;
 }
-.drawingArea .p6,
-.drawingArea .pg,
-.drawingArea .pm,
-.drawingArea .p1,
-.drawingArea .p31m {
+.drawingArea .p6, .drawingArea .pg, .drawingArea .pm, .drawingArea .p1, .drawingArea .p31m {
   top: 73px;
   position: relative;
 }
@@ -310,4 +302,24 @@ text {
 #filter-container {
   visibility: hidden;
   width: 0;
+}
+.modal {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  flex: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+.modal div {
+  margin: auto;
+  width: 300px;
+  font-family: 'PT Mono', sans-serif;
+  font-size: 12px;
+  color: hsl(0, 0%, 78%);
+  background: hsl(0, 0%, 12%);
+  padding: 10px;
+  text-align: center;
 }

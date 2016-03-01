@@ -51,6 +51,7 @@ type alias Model =
     , undoStack : List PatternState
     , redoStack : List PatternState
     , seed : Random.Seed
+    , showHelp : Bool
     }
 
 
@@ -102,4 +103,5 @@ initialModel =
     , seed = Random.initialSeed 31415
     , undoStack = []
     , redoStack = []
+    , showHelp = False
     }

@@ -42,6 +42,7 @@ type Action
     | TogglePallete Bool
     | ClosePallete
     | UpadtePattern
+    | ToggleHelp Bool
 
 
 getRandom : Random.Seed -> Int -> Int -> ( Int, Random.Seed )
@@ -333,5 +334,12 @@ update action model =
 
             UpadtePattern ->
                 ( updatePatternInModel model
+                , Effects.none
+                )
+
+            ToggleHelp showHelp ->
+                ( { model
+                    | showHelp = showHelp
+                  }
                 , Effects.none
                 )

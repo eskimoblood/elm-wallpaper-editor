@@ -89,8 +89,6 @@ update action model =
         drawingState = model.drawingState
 
         colorState = model.colorState
-
-        a = Debug.log "action" action
     in
         case action of
             NoOp ->

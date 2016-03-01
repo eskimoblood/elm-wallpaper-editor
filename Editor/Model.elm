@@ -63,12 +63,12 @@ initialPatternState =
     , noiseY = 10
     , noiseZ = 10
     , noiseDesctruction = 0
-    , groupType = "P4"
+    , groupType = "P3m1"
     , rasterSize = 4
-    , boundingBox = Pattern.bounding (P4 150 150)
+    , boundingBox = Pattern.bounding (P3m1 172 )
     , tile = []
-    , group = P4 40 40
-    , previewGroup = P4 150 150
+    , group = P3m1 50
+    , previewGroup = P3m1 172
     , noise = []
     , pattern = []
     }
@@ -79,7 +79,7 @@ initialDrawingState =
     { lineStart = { x = 0, y = 0 }
     , lineEnd = { x = 0, y = 0 }
     , isDrawing = False
-    , rasterCoords = rasterCoords 4 (Pattern.bounding (P1 150 150))
+    , rasterCoords = rasterCoords 4 (Pattern.bounding (P3m1 172))
     }
 
 
@@ -92,7 +92,6 @@ initialColorState =
     , loading = False
     , paletteOpen = False
     }
-
 
 
 initialModel : Model

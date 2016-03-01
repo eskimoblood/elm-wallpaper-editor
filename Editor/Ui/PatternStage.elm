@@ -65,10 +65,9 @@ stage model =
             , y "0"
             ]
             [ renderColorizedNoisyTiles model
-
             ]
         , svg
-            [id "filter-container"]
+            [ id "filter-container" ]
             [ defs
                 []
                 [ Svg.filter
@@ -76,9 +75,7 @@ stage model =
                     [ feImage
                         [ xlinkHref "#stage"
                         , x "0"
-                        , y "0"
-                        , width "100"
-                        , height "100"
+                        , y "-100"
                         , result "IMAGEFILL"
                         ]
                         []
@@ -90,8 +87,8 @@ stage model =
                     , feFlood [ floodColor "#ffffff", result "BG-COLOR" ] []
                     , feMerge
                         [ result "BG-PATTERN" ]
-                        [ feMergeNode [in' "BG-COLOR"][]
-                        , feMergeNode [in' "TILEPATTERN"][]
+                        [ feMergeNode [ in' "BG-COLOR" ] []
+                        , feMergeNode [ in' "TILEPATTERN" ] []
                         ]
                     , feComposite
                         [ operator "in"

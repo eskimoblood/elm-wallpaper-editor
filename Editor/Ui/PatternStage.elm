@@ -71,7 +71,6 @@ stage model =
                 [ version "1.1"
                 , x "0"
                 , y "0"
-                , xmlns "http://www.w3.org/2000/svg"
                 ]
                 [ renderColorizedNoisyTiles model
                 ]

@@ -18,3 +18,10 @@ requestPaletteFilter : Signal String
 requestPaletteFilter =
     Signal.filter (String.isEmpty >> not) "" requestPalette.signal
         |> settledAfter (300 * Time.millisecond)
+
+setSvgString :
+    { address : Signal.Address String
+    , signal : Signal String
+    }
+setSvgString =
+    Signal.mailbox ""

@@ -52,6 +52,7 @@ type alias Model =
     , redoStack : List PatternState
     , seed : Random.Seed
     , showHelp : Bool
+    , patternAsURI : String
     }
 
 
@@ -103,4 +104,5 @@ initialModel =
     , undoStack = []
     , redoStack = []
     , showHelp = False
+    ,patternAsURI ="#"
     }

@@ -2,7 +2,7 @@ module Editor.View (..) where
 
 import Html exposing (..)
 import Html.Attributes as Attr
-import Html.Events exposing (on, targetValue)
+import Html.Events exposing (on, onWithOptions, targetValue)
 import Editor.Ui.Slider exposing (slider)
 import Editor.Ui.Header exposing (header)
 import Editor.Ui.GroupSelect exposing (groupSelect)
@@ -115,7 +115,7 @@ view address model =
                         [ Html.text "Undo"
                         ]
                     , button
-                        [ on "click" targetValue (\_ -> Signal.message address Redo)
+                        [ on "mousedown" targetValue (\_ -> Signal.message address Redo)
                         , Attr.disabled redoDisabled
                         ]
                         [ Html.text "Redo"
@@ -125,11 +125,24 @@ view address model =
                         ]
                         [ Html.text "?"
                         ]
+                    , a
+                        [ Attr.id "download"
+                           , Attr.target "_blank"
+                           , Attr.downloadAs "pattern.svg"
+                        ]
+                        [ button
+                            [ on "mousedown" targetValue (\_ -> Signal.message address SetDownloadURI)
+                            ]
+                            [ Html.text "↓"
+                            ]
+                        ]
                     ]
                 ]
-            , div
+             , div
                 [ Attr.class "main"
                 ]
                 [ stage model.patternState.pattern
                 ]
-            ] ++ (help model.showHelp address))
+             ]
+                ++ (help model.showHelp address)
+            )

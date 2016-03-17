@@ -9,13 +9,15 @@ import Editor.Util.Pattern exposing (updatePatternInModel)
 import Editor.Util.History exposing (..)
 import Editor.Util.Groups exposing (getGroup)
 import Editor.Util.Color exposing (..)
+import Editor.Ui.PatternStage exposing (getPatternAsString)
 import Effects exposing (Effects, none)
 import WallpaperGroup.Pattern as Pattern
 import Random
 import Array
 import Effects exposing (..)
-import Editor.Signals exposing (requestPalette)
+import Editor.Signals exposing (requestPalette, setSvgString)
 import Task
+import Http
 
 
 type Action
@@ -43,6 +45,7 @@ type Action
     | ClosePallete
     | UpadtePattern
     | ToggleHelp Bool
+    | SetDownloadURI
 
 
 getRandom : Random.Seed -> Int -> Int -> ( Int, Random.Seed )
@@ -340,4 +343,11 @@ update action model =
                     | showHelp = showHelp
                   }
                 , Effects.none
+                )
+
+            SetDownloadURI  ->
+                (  model
+                , Signal.send setSvgString.address ""
+                    `Task.andThen` (\_ -> Task.succeed NoOp)
+                    |> Effects.task
                 )

@@ -18,7 +18,7 @@ import Html exposing (..)
 import Effects exposing (none)
 import Editor.View exposing (view)
 import Editor.Action exposing (..)
-import Editor.Signals exposing (requestPaletteFilter)
+import Editor.Signals exposing (requestPaletteFilter, setSvgString)
 import Editor.Model exposing (Model, initialModel)
 import Signal
 import Task
@@ -33,8 +33,10 @@ app =
         { init = ( initialModel, Effects.none )
         , update = update
         , view = view
-        , inputs = [ responseColor ]
+        , inputs = [ responseColor]
         }
+
+
 
 --
 
@@ -53,6 +55,12 @@ port tasks =
 port request : Signal String
 port request =
     requestPaletteFilter
+
+
+port svgString : Signal String
+port svgString =
+    setSvgString.signal
+
 
 
 port responseColors : Signal Json.Value

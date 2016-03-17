@@ -22,9 +22,10 @@
     var elmApp = Elm.embed(Elm.Editor.App, elmDiv, {
       responseColors: []
     });
-    elmApp.ports.request.subscribe(testPortCallback);
+    elmApp.ports.request.subscribe(loadColor);
+    elmApp.ports.svgString.subscribe(setSvgString);
 
-    function testPortCallback(query) {
+    function loadColor(query) {
 
       JSONP({
         url: "http://www.colourlovers.com/api/palettes",
@@ -36,10 +37,13 @@
         callbackName: 'jsonCallback',
         success: function(data) {
           elmApp.ports.responseColors.send(data);
-
-          console.log(data);
         }
       });
+    }
+
+    function setSvgString(){
+      var s = document.getElementById('patternSvg').innerHTML
+      document.getElementById('download').href = 'data:image/svg+xml,' + encodeURIComponent(s);
     }
   </script>
 

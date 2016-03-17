@@ -12067,15 +12067,17 @@ Elm.Editor.Model.make = function (_elm) {
                       ,seed: $Random.initialSeed(31415)
                       ,undoStack: _U.list([])
                       ,redoStack: _U.list([])
-                      ,showHelp: false};
-   var Model = F7(function (a,b,c,d,e,f,g) {
+                      ,showHelp: false
+                      ,patternAsURI: "#"};
+   var Model = F8(function (a,b,c,d,e,f,g,h) {
       return {patternState: a
              ,drawingState: b
              ,colorState: c
              ,undoStack: d
              ,redoStack: e
              ,seed: f
-             ,showHelp: g};
+             ,showHelp: g
+             ,patternAsURI: h};
    });
    var ColorState = F6(function (a,b,c,d,e,f) {
       return {colorSearch: a
@@ -12633,603 +12635,6 @@ Elm.Editor.Util.Color.make = function (_elm) {
    };
    return _elm.Editor.Util.Color.values = {_op: _op
                                           ,toGradient: toGradient};
-};
-Elm.Native.Effects = {};
-Elm.Native.Effects.make = function(localRuntime) {
-
-	localRuntime.Native = localRuntime.Native || {};
-	localRuntime.Native.Effects = localRuntime.Native.Effects || {};
-	if (localRuntime.Native.Effects.values)
-	{
-		return localRuntime.Native.Effects.values;
-	}
-
-	var Task = Elm.Native.Task.make(localRuntime);
-	var Utils = Elm.Native.Utils.make(localRuntime);
-	var Signal = Elm.Signal.make(localRuntime);
-	var List = Elm.Native.List.make(localRuntime);
-
-
-	// polyfill so things will work even if rAF is not available for some reason
-	var _requestAnimationFrame =
-		typeof requestAnimationFrame !== 'undefined'
-			? requestAnimationFrame
-			: function(cb) { setTimeout(cb, 1000 / 60); }
-			;
-
-
-	// batchedSending and sendCallback implement a small state machine in order
-	// to schedule only one send(time) call per animation frame.
-	//
-	// Invariants:
-	// 1. In the NO_REQUEST state, there is never a scheduled sendCallback.
-	// 2. In the PENDING_REQUEST and EXTRA_REQUEST states, there is always exactly
-	//    one scheduled sendCallback.
-	var NO_REQUEST = 0;
-	var PENDING_REQUEST = 1;
-	var EXTRA_REQUEST = 2;
-	var state = NO_REQUEST;
-	var messageArray = [];
-
-
-	function batchedSending(address, tickMessages)
-	{
-		// insert ticks into the messageArray
-		var foundAddress = false;
-
-		for (var i = messageArray.length; i--; )
-		{
-			if (messageArray[i].address === address)
-			{
-				foundAddress = true;
-				messageArray[i].tickMessages = A3(List.foldl, List.cons, messageArray[i].tickMessages, tickMessages);
-				break;
-			}
-		}
-
-		if (!foundAddress)
-		{
-			messageArray.push({ address: address, tickMessages: tickMessages });
-		}
-
-		// do the appropriate state transition
-		switch (state)
-		{
-			case NO_REQUEST:
-				_requestAnimationFrame(sendCallback);
-				state = PENDING_REQUEST;
-				break;
-			case PENDING_REQUEST:
-				state = PENDING_REQUEST;
-				break;
-			case EXTRA_REQUEST:
-				state = PENDING_REQUEST;
-				break;
-		}
-	}
-
-
-	function sendCallback(time)
-	{
-		switch (state)
-		{
-			case NO_REQUEST:
-				// This state should not be possible. How can there be no
-				// request, yet somehow we are actively fulfilling a
-				// request?
-				throw new Error(
-					'Unexpected send callback.\n' +
-					'Please report this to <https://github.com/evancz/elm-effects/issues>.'
-				);
-
-			case PENDING_REQUEST:
-				// At this point, we do not *know* that another frame is
-				// needed, but we make an extra request to rAF just in
-				// case. It's possible to drop a frame if rAF is called
-				// too late, so we just do it preemptively.
-				_requestAnimationFrame(sendCallback);
-				state = EXTRA_REQUEST;
-
-				// There's also stuff we definitely need to send.
-				send(time);
-				return;
-
-			case EXTRA_REQUEST:
-				// Turns out the extra request was not needed, so we will
-				// stop calling rAF. No reason to call it all the time if
-				// no one needs it.
-				state = NO_REQUEST;
-				return;
-		}
-	}
-
-
-	function send(time)
-	{
-		for (var i = messageArray.length; i--; )
-		{
-			var messages = A3(
-				List.foldl,
-				F2( function(toAction, list) { return List.Cons(toAction(time), list); } ),
-				List.Nil,
-				messageArray[i].tickMessages
-			);
-			Task.perform( A2(Signal.send, messageArray[i].address, messages) );
-		}
-		messageArray = [];
-	}
-
-
-	function requestTickSending(address, tickMessages)
-	{
-		return Task.asyncFunction(function(callback) {
-			batchedSending(address, tickMessages);
-			callback(Task.succeed(Utils.Tuple0));
-		});
-	}
-
-
-	return localRuntime.Native.Effects.values = {
-		requestTickSending: F2(requestTickSending)
-	};
-
-};
-
-Elm.Effects = Elm.Effects || {};
-Elm.Effects.make = function (_elm) {
-   "use strict";
-   _elm.Effects = _elm.Effects || {};
-   if (_elm.Effects.values) return _elm.Effects.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Basics = Elm.Basics.make(_elm),
-   $Debug = Elm.Debug.make(_elm),
-   $List = Elm.List.make(_elm),
-   $Maybe = Elm.Maybe.make(_elm),
-   $Native$Effects = Elm.Native.Effects.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm),
-   $Task = Elm.Task.make(_elm),
-   $Time = Elm.Time.make(_elm);
-   var _op = {};
-   var ignore = function (task) {
-      return A2($Task.map,$Basics.always({ctor: "_Tuple0"}),task);
-   };
-   var requestTickSending = $Native$Effects.requestTickSending;
-   var toTaskHelp = F3(function (address,effect,_p0) {
-      var _p1 = _p0;
-      var _p5 = _p1._1;
-      var _p4 = _p1;
-      var _p3 = _p1._0;
-      var _p2 = effect;
-      switch (_p2.ctor)
-      {case "Task": var reporter = A2($Task.andThen,
-           _p2._0,
-           function (answer) {
-              return A2($Signal.send,address,_U.list([answer]));
-           });
-           return {ctor: "_Tuple2"
-                  ,_0: A2($Task.andThen,
-                  _p3,
-                  $Basics.always(ignore($Task.spawn(reporter))))
-                  ,_1: _p5};
-         case "Tick": return {ctor: "_Tuple2"
-                             ,_0: _p3
-                             ,_1: A2($List._op["::"],_p2._0,_p5)};
-         case "None": return _p4;
-         default: return A3($List.foldl,toTaskHelp(address),_p4,_p2._0);}
-   });
-   var toTask = F2(function (address,effect) {
-      var _p6 = A3(toTaskHelp,
-      address,
-      effect,
-      {ctor: "_Tuple2"
-      ,_0: $Task.succeed({ctor: "_Tuple0"})
-      ,_1: _U.list([])});
-      var combinedTask = _p6._0;
-      var tickMessages = _p6._1;
-      return $List.isEmpty(tickMessages) ? combinedTask : A2($Task.andThen,
-      combinedTask,
-      $Basics.always(A2(requestTickSending,address,tickMessages)));
-   });
-   var Never = function (a) {    return {ctor: "Never",_0: a};};
-   var Batch = function (a) {    return {ctor: "Batch",_0: a};};
-   var batch = Batch;
-   var None = {ctor: "None"};
-   var none = None;
-   var Tick = function (a) {    return {ctor: "Tick",_0: a};};
-   var tick = Tick;
-   var Task = function (a) {    return {ctor: "Task",_0: a};};
-   var task = Task;
-   var map = F2(function (func,effect) {
-      var _p7 = effect;
-      switch (_p7.ctor)
-      {case "Task": return Task(A2($Task.map,func,_p7._0));
-         case "Tick": return Tick(function (_p8) {
-              return func(_p7._0(_p8));
-           });
-         case "None": return None;
-         default: return Batch(A2($List.map,map(func),_p7._0));}
-   });
-   return _elm.Effects.values = {_op: _op
-                                ,none: none
-                                ,task: task
-                                ,tick: tick
-                                ,map: map
-                                ,batch: batch
-                                ,toTask: toTask};
-};
-Elm.Editor = Elm.Editor || {};
-Elm.Editor.Signals = Elm.Editor.Signals || {};
-Elm.Editor.Signals.make = function (_elm) {
-   "use strict";
-   _elm.Editor = _elm.Editor || {};
-   _elm.Editor.Signals = _elm.Editor.Signals || {};
-   if (_elm.Editor.Signals.values)
-   return _elm.Editor.Signals.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Basics = Elm.Basics.make(_elm),
-   $Debug = Elm.Debug.make(_elm),
-   $List = Elm.List.make(_elm),
-   $Maybe = Elm.Maybe.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm),
-   $Signal$Time = Elm.Signal.Time.make(_elm),
-   $String = Elm.String.make(_elm),
-   $Time = Elm.Time.make(_elm);
-   var _op = {};
-   var requestPalette = $Signal.mailbox("");
-   var requestPaletteFilter = A2($Signal$Time.settledAfter,
-   300 * $Time.millisecond,
-   A3($Signal.filter,
-   function (_p0) {
-      return $Basics.not($String.isEmpty(_p0));
-   },
-   "",
-   requestPalette.signal));
-   return _elm.Editor.Signals.values = {_op: _op
-                                       ,requestPalette: requestPalette
-                                       ,requestPaletteFilter: requestPaletteFilter};
-};
-Elm.Editor = Elm.Editor || {};
-Elm.Editor.Action = Elm.Editor.Action || {};
-Elm.Editor.Action.make = function (_elm) {
-   "use strict";
-   _elm.Editor = _elm.Editor || {};
-   _elm.Editor.Action = _elm.Editor.Action || {};
-   if (_elm.Editor.Action.values) return _elm.Editor.Action.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Array = Elm.Array.make(_elm),
-   $Basics = Elm.Basics.make(_elm),
-   $Debug = Elm.Debug.make(_elm),
-   $Editor$Model = Elm.Editor.Model.make(_elm),
-   $Editor$Signals = Elm.Editor.Signals.make(_elm),
-   $Editor$Types = Elm.Editor.Types.make(_elm),
-   $Editor$Util$Color = Elm.Editor.Util.Color.make(_elm),
-   $Editor$Util$Geom = Elm.Editor.Util.Geom.make(_elm),
-   $Editor$Util$Groups = Elm.Editor.Util.Groups.make(_elm),
-   $Editor$Util$History = Elm.Editor.Util.History.make(_elm),
-   $Editor$Util$Pattern = Elm.Editor.Util.Pattern.make(_elm),
-   $Editor$Util$Raster = Elm.Editor.Util.Raster.make(_elm),
-   $Editor$Util$TileSize = Elm.Editor.Util.TileSize.make(_elm),
-   $Effects = Elm.Effects.make(_elm),
-   $List = Elm.List.make(_elm),
-   $Maybe = Elm.Maybe.make(_elm),
-   $Random = Elm.Random.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm),
-   $Task = Elm.Task.make(_elm),
-   $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
-   var _op = {};
-   var getRandom = F3(function (seed,min,max) {
-      var generator = A2($Random.$int,min,max);
-      return A2($Random.generate,generator,seed);
-   });
-   var getRandomCoord = F3(function (points,seed,i) {
-      var getValue = function (item) {
-         var _p0 = item;
-         if (_p0.ctor === "Just") {
-               return _p0._0;
-            } else {
-               return {x: 0,y: 0};
-            }
-      };
-      var seed$ = $Random.initialSeed(i + $Basics.fst(A3(getRandom,
-      seed,
-      $Random.minInt,
-      $Random.maxInt)));
-      var _p1 = A3(getRandom,seed$,0,$List.length(points) - 1);
-      var i1 = _p1._0;
-      var seed$$ = _p1._1;
-      var _p2 = A3(getRandom,seed$$,0,$List.length(points) - 1);
-      var i2 = _p2._0;
-      return _U.list([getValue(A2($Array.get,
-                     i1,
-                     $Array.fromList(points)))
-                     ,getValue(A2($Array.get,i2,$Array.fromList(points)))]);
-   });
-   var ToggleHelp = function (a) {
-      return {ctor: "ToggleHelp",_0: a};
-   };
-   var UpadtePattern = {ctor: "UpadtePattern"};
-   var ClosePallete = {ctor: "ClosePallete"};
-   var TogglePallete = function (a) {
-      return {ctor: "TogglePallete",_0: a};
-   };
-   var SelectPalette = function (a) {
-      return {ctor: "SelectPalette",_0: a};
-   };
-   var NewColors = function (a) {
-      return {ctor: "NewColors",_0: a};
-   };
-   var StartColorSearch = function (a) {
-      return {ctor: "StartColorSearch",_0: a};
-   };
-   var Redo = {ctor: "Redo"};
-   var Undo = {ctor: "Undo"};
-   var Random = {ctor: "Random"};
-   var ClearTiles = {ctor: "ClearTiles"};
-   var DeleteLine = function (a) {
-      return {ctor: "DeleteLine",_0: a};
-   };
-   var LineEnd = function (a) {
-      return {ctor: "LineEnd",_0: a};
-   };
-   var LineMove = function (a) {
-      return {ctor: "LineMove",_0: a};
-   };
-   var LineStart = function (a) {
-      return {ctor: "LineStart",_0: a};
-   };
-   var RasterSize = function (a) {
-      return {ctor: "RasterSize",_0: a};
-   };
-   var Group = function (a) {    return {ctor: "Group",_0: a};};
-   var NoiseDesctruction = function (a) {
-      return {ctor: "NoiseDesctruction",_0: a};
-   };
-   var NoiseZ = function (a) {    return {ctor: "NoiseZ",_0: a};};
-   var NoiseY = function (a) {    return {ctor: "NoiseY",_0: a};};
-   var NoiseX = function (a) {    return {ctor: "NoiseX",_0: a};};
-   var Rows = function (a) {    return {ctor: "Rows",_0: a};};
-   var Columns = function (a) {
-      return {ctor: "Columns",_0: a};
-   };
-   var NoOp = {ctor: "NoOp"};
-   var update = F2(function (action,model) {
-      var colorState = model.colorState;
-      var drawingState = model.drawingState;
-      var patternState = model.patternState;
-      var _p3 = action;
-      switch (_p3.ctor)
-      {case "NoOp": return {ctor: "_Tuple2"
-                           ,_0: model
-                           ,_1: $Effects.none};
-         case "Rows": var model = $Editor$Util$History.addHistory(model);
-           return {ctor: "_Tuple2"
-                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                  {patternState: _U.update(patternState,{rows: _p3._0})}))
-                  ,_1: $Effects.none};
-         case "Columns":
-         var model = $Editor$Util$History.addHistory(model);
-           return {ctor: "_Tuple2"
-                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                  {patternState: _U.update(patternState,{columns: _p3._0})}))
-                  ,_1: $Effects.none};
-         case "NoiseX":
-         var model = $Editor$Util$History.addHistory(model);
-           return {ctor: "_Tuple2"
-                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                  {patternState: _U.update(patternState,{noiseX: _p3._0})}))
-                  ,_1: $Effects.none};
-         case "NoiseY":
-         var model = $Editor$Util$History.addHistory(model);
-           return {ctor: "_Tuple2"
-                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                  {patternState: _U.update(patternState,{noiseY: _p3._0})}))
-                  ,_1: $Effects.none};
-         case "NoiseZ":
-         var model = $Editor$Util$History.addHistory(model);
-           return {ctor: "_Tuple2"
-                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                  {patternState: _U.update(patternState,{noiseZ: _p3._0})}))
-                  ,_1: $Effects.none};
-         case "NoiseDesctruction":
-         var model = $Editor$Util$History.addHistory(model);
-           return {ctor: "_Tuple2"
-                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                  {patternState: _U.update(patternState,
-                  {noiseDesctruction: _p3._0})}))
-                  ,_1: $Effects.none};
-         case "Group": var _p4 = _p3._0;
-           var groupSize = $Editor$Util$TileSize.getTileSize(_p4);
-           var previewGroupSize = $Editor$Util$TileSize.getPreviewTileSize(_p4);
-           var previewGroup = A3($Editor$Util$Groups.getGroup,
-           _p4,
-           previewGroupSize,
-           previewGroupSize);
-           var boundingBox = $WallpaperGroup$Pattern.bounding(previewGroup);
-           var model = $Editor$Util$History.addHistory(model);
-           return {ctor: "_Tuple2"
-                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                  {patternState: _U.update(patternState,
-                  {group: A3($Editor$Util$Groups.getGroup,_p4,groupSize,groupSize)
-                  ,previewGroup: previewGroup
-                  ,groupType: _p4
-                  ,boundingBox: boundingBox})
-                  ,drawingState: _U.update(drawingState,
-                  {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
-                  patternState.rasterSize,
-                  $WallpaperGroup$Pattern.bounding(A3($Editor$Util$Groups.getGroup,
-                  _p4,
-                  previewGroupSize,
-                  previewGroupSize)))})}))
-                  ,_1: $Effects.none};
-         case "RasterSize": var _p5 = _p3._0;
-           var model = $Editor$Util$History.addHistory(model);
-           var previewGroupSize = $Editor$Util$TileSize.getPreviewTileSize(model.patternState.groupType);
-           return {ctor: "_Tuple2"
-                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                  {patternState: _U.update(patternState,
-                  {rasterSize: _p5,tile: _U.list([])})
-                  ,drawingState: _U.update(drawingState,
-                  {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
-                  _p5,
-                  $WallpaperGroup$Pattern.bounding(A3($Editor$Util$Groups.getGroup,
-                  patternState.groupType,
-                  previewGroupSize,
-                  previewGroupSize)))})}))
-                  ,_1: $Effects.none};
-         case "LineStart": var _p6 = _p3._0;
-           return {ctor: "_Tuple2"
-                  ,_0: _U.update(model,
-                  {drawingState: _U.update(drawingState,
-                  {lineStart: A2($Editor$Util$Geom.snap,
-                  drawingState.rasterCoords,
-                  _p6)
-                  ,lineEnd: A2($Editor$Util$Geom.snap,
-                  drawingState.rasterCoords,
-                  _p6)
-                  ,isDrawing: true})})
-                  ,_1: $Effects.none};
-         case "LineMove":
-         return drawingState.isDrawing ? {ctor: "_Tuple2"
-                                         ,_0: _U.update(model,
-                                         {drawingState: _U.update(drawingState,
-                                         {lineEnd: A2($Editor$Util$Geom.snap,
-                                         drawingState.rasterCoords,
-                                         _p3._0)})})
-                                         ,_1: $Effects.none} : {ctor: "_Tuple2"
-                                                               ,_0: model
-                                                               ,_1: $Effects.none};
-         case "LineEnd": if (drawingState.isDrawing) {
-                 var tile = A2($List._op["::"],
-                 _U.list([drawingState.lineStart,drawingState.lineEnd]),
-                 patternState.tile);
-                 var model = $Editor$Util$History.addHistory(model);
-                 return {ctor: "_Tuple2"
-                        ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                        {drawingState: _U.update(drawingState,{isDrawing: false})
-                        ,patternState: _U.update(patternState,{tile: tile})}))
-                        ,_1: $Effects.none};
-              } else return {ctor: "_Tuple2",_0: model,_1: $Effects.none};
-         case "DeleteLine": var tile = A2($List.filter,
-           A2($Editor$Util$Geom.lineIsNearPoint,_p3._0,10),
-           patternState.tile);
-           var model = $Editor$Util$History.addHistory(model);
-           return {ctor: "_Tuple2"
-                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                  {patternState: _U.update(patternState,{tile: tile})}))
-                  ,_1: $Effects.none};
-         case "ClearTiles":
-         var model = $Editor$Util$History.addHistory(model);
-           return {ctor: "_Tuple2"
-                  ,_0: _U.update(model,
-                  {patternState: _U.update(patternState,
-                  {tile: _U.list([]),noise: _U.list([]),pattern: _U.list([])})})
-                  ,_1: $Effects.none};
-         case "Random":
-         var model = $Editor$Util$History.addHistory(model);
-           var _p7 = A3(getRandom,model.seed,3,10);
-           var i = _p7._0;
-           var seed$ = _p7._1;
-           var tile = A2($List.map,
-           A2(getRandomCoord,drawingState.rasterCoords,seed$),
-           _U.range(1,i));
-           return {ctor: "_Tuple2"
-                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                  {patternState: _U.update(patternState,{tile: tile})
-                  ,seed: seed$}))
-                  ,_1: $Effects.none};
-         case "Undo": return {ctor: "_Tuple2"
-                             ,_0: $Editor$Util$History.undo(model)
-                             ,_1: $Effects.none};
-         case "Redo": return {ctor: "_Tuple2"
-                             ,_0: $Editor$Util$History.redo(model)
-                             ,_1: $Effects.none};
-         case "StartColorSearch": var _p9 = _p3._0;
-           var sendTask = $Effects.task(A2($Task.andThen,
-           A2($Signal.send,$Editor$Signals.requestPalette.address,_p9),
-           function (_p8) {
-              return $Task.succeed(NoOp);
-           }));
-           var model = $Editor$Util$History.addHistory(model);
-           return {ctor: "_Tuple2"
-                  ,_0: _U.update(model,
-                  {colorState: _U.update(colorState,
-                  {colorSearch: _p9,loading: true})})
-                  ,_1: sendTask};
-         case "NewColors": var _p10 = _p3._0;
-           if (_p10.ctor === "Ok") {
-                 return {ctor: "_Tuple2"
-                        ,_0: _U.update(model,
-                        {colorState: _U.update(colorState,
-                        {palettes: _p10._0,loading: false})})
-                        ,_1: $Effects.none};
-              } else {
-                 return {ctor: "_Tuple2"
-                        ,_0: _U.update(model,
-                        {colorState: _U.update(colorState,
-                        {palettes: _U.list([]),loading: false})})
-                        ,_1: $Effects.none};
-              }
-         case "SelectPalette": var _p11 = _p3._0;
-           var p = $Editor$Util$Color.toGradient(_p11);
-           var model = $Editor$Util$History.addHistory(model);
-           return {ctor: "_Tuple2"
-                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
-                  {colorState: _U.update(colorState,
-                  {selectedGradient: p,selectedPalette: _p11})}))
-                  ,_1: $Effects.none};
-         case "TogglePallete": var _p13 = _p3._0;
-           return _p13 ? {ctor: "_Tuple2"
-                         ,_0: _U.update(model,
-                         {colorState: _U.update(colorState,{paletteOpen: _p13})})
-                         ,_1: $Effects.none} : {ctor: "_Tuple2"
-                                               ,_0: model
-                                               ,_1: $Effects.task(A2($Task.andThen,
-                                               $Task.sleep(300),
-                                               function (_p12) {
-                                                  return $Task.succeed(ClosePallete);
-                                               }))};
-         case "ClosePallete": return {ctor: "_Tuple2"
-                                     ,_0: _U.update(model,
-                                     {colorState: _U.update(colorState,{paletteOpen: false})})
-                                     ,_1: $Effects.none};
-         case "UpadtePattern": return {ctor: "_Tuple2"
-                                      ,_0: $Editor$Util$Pattern.updatePatternInModel(model)
-                                      ,_1: $Effects.none};
-         default: return {ctor: "_Tuple2"
-                         ,_0: _U.update(model,{showHelp: _p3._0})
-                         ,_1: $Effects.none};}
-   });
-   return _elm.Editor.Action.values = {_op: _op
-                                      ,NoOp: NoOp
-                                      ,Columns: Columns
-                                      ,Rows: Rows
-                                      ,NoiseX: NoiseX
-                                      ,NoiseY: NoiseY
-                                      ,NoiseZ: NoiseZ
-                                      ,NoiseDesctruction: NoiseDesctruction
-                                      ,Group: Group
-                                      ,RasterSize: RasterSize
-                                      ,LineStart: LineStart
-                                      ,LineMove: LineMove
-                                      ,LineEnd: LineEnd
-                                      ,DeleteLine: DeleteLine
-                                      ,ClearTiles: ClearTiles
-                                      ,Random: Random
-                                      ,Undo: Undo
-                                      ,Redo: Redo
-                                      ,StartColorSearch: StartColorSearch
-                                      ,NewColors: NewColors
-                                      ,SelectPalette: SelectPalette
-                                      ,TogglePallete: TogglePallete
-                                      ,ClosePallete: ClosePallete
-                                      ,UpadtePattern: UpadtePattern
-                                      ,ToggleHelp: ToggleHelp
-                                      ,getRandom: getRandom
-                                      ,getRandomCoord: getRandomCoord
-                                      ,update: update};
 };
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 
@@ -15106,646 +14511,6 @@ Elm.Html.make = function (_elm) {
                              ,menuitem: menuitem
                              ,menu: menu};
 };
-Elm.StartApp = Elm.StartApp || {};
-Elm.StartApp.make = function (_elm) {
-   "use strict";
-   _elm.StartApp = _elm.StartApp || {};
-   if (_elm.StartApp.values) return _elm.StartApp.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Basics = Elm.Basics.make(_elm),
-   $Debug = Elm.Debug.make(_elm),
-   $Effects = Elm.Effects.make(_elm),
-   $Html = Elm.Html.make(_elm),
-   $List = Elm.List.make(_elm),
-   $Maybe = Elm.Maybe.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm),
-   $Task = Elm.Task.make(_elm);
-   var _op = {};
-   var start = function (config) {
-      var updateStep = F2(function (action,_p0) {
-         var _p1 = _p0;
-         var _p2 = A2(config.update,action,_p1._0);
-         var newModel = _p2._0;
-         var additionalEffects = _p2._1;
-         return {ctor: "_Tuple2"
-                ,_0: newModel
-                ,_1: $Effects.batch(_U.list([_p1._1,additionalEffects]))};
-      });
-      var update = F2(function (actions,_p3) {
-         var _p4 = _p3;
-         return A3($List.foldl,
-         updateStep,
-         {ctor: "_Tuple2",_0: _p4._0,_1: $Effects.none},
-         actions);
-      });
-      var messages = $Signal.mailbox(_U.list([]));
-      var singleton = function (action) {
-         return _U.list([action]);
-      };
-      var address = A2($Signal.forwardTo,messages.address,singleton);
-      var inputs = $Signal.mergeMany(A2($List._op["::"],
-      messages.signal,
-      A2($List.map,$Signal.map(singleton),config.inputs)));
-      var effectsAndModel = A3($Signal.foldp,
-      update,
-      config.init,
-      inputs);
-      var model = A2($Signal.map,$Basics.fst,effectsAndModel);
-      return {html: A2($Signal.map,config.view(address),model)
-             ,model: model
-             ,tasks: A2($Signal.map,
-             function (_p5) {
-                return A2($Effects.toTask,messages.address,$Basics.snd(_p5));
-             },
-             effectsAndModel)};
-   };
-   var App = F3(function (a,b,c) {
-      return {html: a,model: b,tasks: c};
-   });
-   var Config = F4(function (a,b,c,d) {
-      return {init: a,update: b,view: c,inputs: d};
-   });
-   return _elm.StartApp.values = {_op: _op
-                                 ,start: start
-                                 ,Config: Config
-                                 ,App: App};
-};
-Elm.Html = Elm.Html || {};
-Elm.Html.Attributes = Elm.Html.Attributes || {};
-Elm.Html.Attributes.make = function (_elm) {
-   "use strict";
-   _elm.Html = _elm.Html || {};
-   _elm.Html.Attributes = _elm.Html.Attributes || {};
-   if (_elm.Html.Attributes.values)
-   return _elm.Html.Attributes.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Basics = Elm.Basics.make(_elm),
-   $Debug = Elm.Debug.make(_elm),
-   $Html = Elm.Html.make(_elm),
-   $Json$Encode = Elm.Json.Encode.make(_elm),
-   $List = Elm.List.make(_elm),
-   $Maybe = Elm.Maybe.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm),
-   $String = Elm.String.make(_elm),
-   $VirtualDom = Elm.VirtualDom.make(_elm);
-   var _op = {};
-   var attribute = $VirtualDom.attribute;
-   var contextmenu = function (value) {
-      return A2(attribute,"contextmenu",value);
-   };
-   var property = $VirtualDom.property;
-   var stringProperty = F2(function (name,string) {
-      return A2(property,name,$Json$Encode.string(string));
-   });
-   var $class = function (name) {
-      return A2(stringProperty,"className",name);
-   };
-   var id = function (name) {
-      return A2(stringProperty,"id",name);
-   };
-   var title = function (name) {
-      return A2(stringProperty,"title",name);
-   };
-   var accesskey = function ($char) {
-      return A2(stringProperty,
-      "accessKey",
-      $String.fromChar($char));
-   };
-   var dir = function (value) {
-      return A2(stringProperty,"dir",value);
-   };
-   var draggable = function (value) {
-      return A2(stringProperty,"draggable",value);
-   };
-   var dropzone = function (value) {
-      return A2(stringProperty,"dropzone",value);
-   };
-   var itemprop = function (value) {
-      return A2(stringProperty,"itemprop",value);
-   };
-   var lang = function (value) {
-      return A2(stringProperty,"lang",value);
-   };
-   var tabindex = function (n) {
-      return A2(stringProperty,"tabIndex",$Basics.toString(n));
-   };
-   var charset = function (value) {
-      return A2(stringProperty,"charset",value);
-   };
-   var content = function (value) {
-      return A2(stringProperty,"content",value);
-   };
-   var httpEquiv = function (value) {
-      return A2(stringProperty,"httpEquiv",value);
-   };
-   var language = function (value) {
-      return A2(stringProperty,"language",value);
-   };
-   var src = function (value) {
-      return A2(stringProperty,"src",value);
-   };
-   var height = function (value) {
-      return A2(stringProperty,"height",$Basics.toString(value));
-   };
-   var width = function (value) {
-      return A2(stringProperty,"width",$Basics.toString(value));
-   };
-   var alt = function (value) {
-      return A2(stringProperty,"alt",value);
-   };
-   var preload = function (value) {
-      return A2(stringProperty,"preload",value);
-   };
-   var poster = function (value) {
-      return A2(stringProperty,"poster",value);
-   };
-   var kind = function (value) {
-      return A2(stringProperty,"kind",value);
-   };
-   var srclang = function (value) {
-      return A2(stringProperty,"srclang",value);
-   };
-   var sandbox = function (value) {
-      return A2(stringProperty,"sandbox",value);
-   };
-   var srcdoc = function (value) {
-      return A2(stringProperty,"srcdoc",value);
-   };
-   var type$ = function (value) {
-      return A2(stringProperty,"type",value);
-   };
-   var value = function (value) {
-      return A2(stringProperty,"value",value);
-   };
-   var placeholder = function (value) {
-      return A2(stringProperty,"placeholder",value);
-   };
-   var accept = function (value) {
-      return A2(stringProperty,"accept",value);
-   };
-   var acceptCharset = function (value) {
-      return A2(stringProperty,"acceptCharset",value);
-   };
-   var action = function (value) {
-      return A2(stringProperty,"action",value);
-   };
-   var autocomplete = function (bool) {
-      return A2(stringProperty,"autocomplete",bool ? "on" : "off");
-   };
-   var autosave = function (value) {
-      return A2(stringProperty,"autosave",value);
-   };
-   var enctype = function (value) {
-      return A2(stringProperty,"enctype",value);
-   };
-   var formaction = function (value) {
-      return A2(stringProperty,"formAction",value);
-   };
-   var list = function (value) {
-      return A2(stringProperty,"list",value);
-   };
-   var minlength = function (n) {
-      return A2(stringProperty,"minLength",$Basics.toString(n));
-   };
-   var maxlength = function (n) {
-      return A2(stringProperty,"maxLength",$Basics.toString(n));
-   };
-   var method = function (value) {
-      return A2(stringProperty,"method",value);
-   };
-   var name = function (value) {
-      return A2(stringProperty,"name",value);
-   };
-   var pattern = function (value) {
-      return A2(stringProperty,"pattern",value);
-   };
-   var size = function (n) {
-      return A2(stringProperty,"size",$Basics.toString(n));
-   };
-   var $for = function (value) {
-      return A2(stringProperty,"htmlFor",value);
-   };
-   var form = function (value) {
-      return A2(stringProperty,"form",value);
-   };
-   var max = function (value) {
-      return A2(stringProperty,"max",value);
-   };
-   var min = function (value) {
-      return A2(stringProperty,"min",value);
-   };
-   var step = function (n) {
-      return A2(stringProperty,"step",n);
-   };
-   var cols = function (n) {
-      return A2(stringProperty,"cols",$Basics.toString(n));
-   };
-   var rows = function (n) {
-      return A2(stringProperty,"rows",$Basics.toString(n));
-   };
-   var wrap = function (value) {
-      return A2(stringProperty,"wrap",value);
-   };
-   var usemap = function (value) {
-      return A2(stringProperty,"useMap",value);
-   };
-   var shape = function (value) {
-      return A2(stringProperty,"shape",value);
-   };
-   var coords = function (value) {
-      return A2(stringProperty,"coords",value);
-   };
-   var challenge = function (value) {
-      return A2(stringProperty,"challenge",value);
-   };
-   var keytype = function (value) {
-      return A2(stringProperty,"keytype",value);
-   };
-   var align = function (value) {
-      return A2(stringProperty,"align",value);
-   };
-   var cite = function (value) {
-      return A2(stringProperty,"cite",value);
-   };
-   var href = function (value) {
-      return A2(stringProperty,"href",value);
-   };
-   var target = function (value) {
-      return A2(stringProperty,"target",value);
-   };
-   var downloadAs = function (value) {
-      return A2(stringProperty,"download",value);
-   };
-   var hreflang = function (value) {
-      return A2(stringProperty,"hreflang",value);
-   };
-   var media = function (value) {
-      return A2(stringProperty,"media",value);
-   };
-   var ping = function (value) {
-      return A2(stringProperty,"ping",value);
-   };
-   var rel = function (value) {
-      return A2(stringProperty,"rel",value);
-   };
-   var datetime = function (value) {
-      return A2(stringProperty,"datetime",value);
-   };
-   var pubdate = function (value) {
-      return A2(stringProperty,"pubdate",value);
-   };
-   var start = function (n) {
-      return A2(stringProperty,"start",$Basics.toString(n));
-   };
-   var colspan = function (n) {
-      return A2(stringProperty,"colSpan",$Basics.toString(n));
-   };
-   var headers = function (value) {
-      return A2(stringProperty,"headers",value);
-   };
-   var rowspan = function (n) {
-      return A2(stringProperty,"rowSpan",$Basics.toString(n));
-   };
-   var scope = function (value) {
-      return A2(stringProperty,"scope",value);
-   };
-   var manifest = function (value) {
-      return A2(stringProperty,"manifest",value);
-   };
-   var boolProperty = F2(function (name,bool) {
-      return A2(property,name,$Json$Encode.bool(bool));
-   });
-   var hidden = function (bool) {
-      return A2(boolProperty,"hidden",bool);
-   };
-   var contenteditable = function (bool) {
-      return A2(boolProperty,"contentEditable",bool);
-   };
-   var spellcheck = function (bool) {
-      return A2(boolProperty,"spellcheck",bool);
-   };
-   var async = function (bool) {
-      return A2(boolProperty,"async",bool);
-   };
-   var defer = function (bool) {
-      return A2(boolProperty,"defer",bool);
-   };
-   var scoped = function (bool) {
-      return A2(boolProperty,"scoped",bool);
-   };
-   var autoplay = function (bool) {
-      return A2(boolProperty,"autoplay",bool);
-   };
-   var controls = function (bool) {
-      return A2(boolProperty,"controls",bool);
-   };
-   var loop = function (bool) {
-      return A2(boolProperty,"loop",bool);
-   };
-   var $default = function (bool) {
-      return A2(boolProperty,"default",bool);
-   };
-   var seamless = function (bool) {
-      return A2(boolProperty,"seamless",bool);
-   };
-   var checked = function (bool) {
-      return A2(boolProperty,"checked",bool);
-   };
-   var selected = function (bool) {
-      return A2(boolProperty,"selected",bool);
-   };
-   var autofocus = function (bool) {
-      return A2(boolProperty,"autofocus",bool);
-   };
-   var disabled = function (bool) {
-      return A2(boolProperty,"disabled",bool);
-   };
-   var multiple = function (bool) {
-      return A2(boolProperty,"multiple",bool);
-   };
-   var novalidate = function (bool) {
-      return A2(boolProperty,"noValidate",bool);
-   };
-   var readonly = function (bool) {
-      return A2(boolProperty,"readOnly",bool);
-   };
-   var required = function (bool) {
-      return A2(boolProperty,"required",bool);
-   };
-   var ismap = function (value) {
-      return A2(boolProperty,"isMap",value);
-   };
-   var download = function (bool) {
-      return A2(boolProperty,"download",bool);
-   };
-   var reversed = function (bool) {
-      return A2(boolProperty,"reversed",bool);
-   };
-   var classList = function (list) {
-      return $class(A2($String.join,
-      " ",
-      A2($List.map,$Basics.fst,A2($List.filter,$Basics.snd,list))));
-   };
-   var style = function (props) {
-      return A2(property,
-      "style",
-      $Json$Encode.object(A2($List.map,
-      function (_p0) {
-         var _p1 = _p0;
-         return {ctor: "_Tuple2"
-                ,_0: _p1._0
-                ,_1: $Json$Encode.string(_p1._1)};
-      },
-      props)));
-   };
-   var key = function (k) {    return A2(stringProperty,"key",k);};
-   return _elm.Html.Attributes.values = {_op: _op
-                                        ,key: key
-                                        ,style: style
-                                        ,$class: $class
-                                        ,classList: classList
-                                        ,id: id
-                                        ,title: title
-                                        ,hidden: hidden
-                                        ,type$: type$
-                                        ,value: value
-                                        ,checked: checked
-                                        ,placeholder: placeholder
-                                        ,selected: selected
-                                        ,accept: accept
-                                        ,acceptCharset: acceptCharset
-                                        ,action: action
-                                        ,autocomplete: autocomplete
-                                        ,autofocus: autofocus
-                                        ,autosave: autosave
-                                        ,disabled: disabled
-                                        ,enctype: enctype
-                                        ,formaction: formaction
-                                        ,list: list
-                                        ,maxlength: maxlength
-                                        ,minlength: minlength
-                                        ,method: method
-                                        ,multiple: multiple
-                                        ,name: name
-                                        ,novalidate: novalidate
-                                        ,pattern: pattern
-                                        ,readonly: readonly
-                                        ,required: required
-                                        ,size: size
-                                        ,$for: $for
-                                        ,form: form
-                                        ,max: max
-                                        ,min: min
-                                        ,step: step
-                                        ,cols: cols
-                                        ,rows: rows
-                                        ,wrap: wrap
-                                        ,href: href
-                                        ,target: target
-                                        ,download: download
-                                        ,downloadAs: downloadAs
-                                        ,hreflang: hreflang
-                                        ,media: media
-                                        ,ping: ping
-                                        ,rel: rel
-                                        ,ismap: ismap
-                                        ,usemap: usemap
-                                        ,shape: shape
-                                        ,coords: coords
-                                        ,src: src
-                                        ,height: height
-                                        ,width: width
-                                        ,alt: alt
-                                        ,autoplay: autoplay
-                                        ,controls: controls
-                                        ,loop: loop
-                                        ,preload: preload
-                                        ,poster: poster
-                                        ,$default: $default
-                                        ,kind: kind
-                                        ,srclang: srclang
-                                        ,sandbox: sandbox
-                                        ,seamless: seamless
-                                        ,srcdoc: srcdoc
-                                        ,reversed: reversed
-                                        ,start: start
-                                        ,align: align
-                                        ,colspan: colspan
-                                        ,rowspan: rowspan
-                                        ,headers: headers
-                                        ,scope: scope
-                                        ,async: async
-                                        ,charset: charset
-                                        ,content: content
-                                        ,defer: defer
-                                        ,httpEquiv: httpEquiv
-                                        ,language: language
-                                        ,scoped: scoped
-                                        ,accesskey: accesskey
-                                        ,contenteditable: contenteditable
-                                        ,contextmenu: contextmenu
-                                        ,dir: dir
-                                        ,draggable: draggable
-                                        ,dropzone: dropzone
-                                        ,itemprop: itemprop
-                                        ,lang: lang
-                                        ,spellcheck: spellcheck
-                                        ,tabindex: tabindex
-                                        ,challenge: challenge
-                                        ,keytype: keytype
-                                        ,cite: cite
-                                        ,datetime: datetime
-                                        ,pubdate: pubdate
-                                        ,manifest: manifest
-                                        ,property: property
-                                        ,attribute: attribute};
-};
-Elm.Html = Elm.Html || {};
-Elm.Html.Events = Elm.Html.Events || {};
-Elm.Html.Events.make = function (_elm) {
-   "use strict";
-   _elm.Html = _elm.Html || {};
-   _elm.Html.Events = _elm.Html.Events || {};
-   if (_elm.Html.Events.values) return _elm.Html.Events.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Basics = Elm.Basics.make(_elm),
-   $Debug = Elm.Debug.make(_elm),
-   $Html = Elm.Html.make(_elm),
-   $Json$Decode = Elm.Json.Decode.make(_elm),
-   $List = Elm.List.make(_elm),
-   $Maybe = Elm.Maybe.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm),
-   $VirtualDom = Elm.VirtualDom.make(_elm);
-   var _op = {};
-   var keyCode = A2($Json$Decode._op[":="],
-   "keyCode",
-   $Json$Decode.$int);
-   var targetChecked = A2($Json$Decode.at,
-   _U.list(["target","checked"]),
-   $Json$Decode.bool);
-   var targetValue = A2($Json$Decode.at,
-   _U.list(["target","value"]),
-   $Json$Decode.string);
-   var defaultOptions = $VirtualDom.defaultOptions;
-   var Options = F2(function (a,b) {
-      return {stopPropagation: a,preventDefault: b};
-   });
-   var onWithOptions = $VirtualDom.onWithOptions;
-   var on = $VirtualDom.on;
-   var messageOn = F3(function (name,addr,msg) {
-      return A3(on,
-      name,
-      $Json$Decode.value,
-      function (_p0) {
-         return A2($Signal.message,addr,msg);
-      });
-   });
-   var onClick = messageOn("click");
-   var onDoubleClick = messageOn("dblclick");
-   var onMouseMove = messageOn("mousemove");
-   var onMouseDown = messageOn("mousedown");
-   var onMouseUp = messageOn("mouseup");
-   var onMouseEnter = messageOn("mouseenter");
-   var onMouseLeave = messageOn("mouseleave");
-   var onMouseOver = messageOn("mouseover");
-   var onMouseOut = messageOn("mouseout");
-   var onBlur = messageOn("blur");
-   var onFocus = messageOn("focus");
-   var onSubmit = messageOn("submit");
-   var onKey = F3(function (name,addr,handler) {
-      return A3(on,
-      name,
-      keyCode,
-      function (code) {
-         return A2($Signal.message,addr,handler(code));
-      });
-   });
-   var onKeyUp = onKey("keyup");
-   var onKeyDown = onKey("keydown");
-   var onKeyPress = onKey("keypress");
-   return _elm.Html.Events.values = {_op: _op
-                                    ,onBlur: onBlur
-                                    ,onFocus: onFocus
-                                    ,onSubmit: onSubmit
-                                    ,onKeyUp: onKeyUp
-                                    ,onKeyDown: onKeyDown
-                                    ,onKeyPress: onKeyPress
-                                    ,onClick: onClick
-                                    ,onDoubleClick: onDoubleClick
-                                    ,onMouseMove: onMouseMove
-                                    ,onMouseDown: onMouseDown
-                                    ,onMouseUp: onMouseUp
-                                    ,onMouseEnter: onMouseEnter
-                                    ,onMouseLeave: onMouseLeave
-                                    ,onMouseOver: onMouseOver
-                                    ,onMouseOut: onMouseOut
-                                    ,on: on
-                                    ,onWithOptions: onWithOptions
-                                    ,defaultOptions: defaultOptions
-                                    ,targetValue: targetValue
-                                    ,targetChecked: targetChecked
-                                    ,keyCode: keyCode
-                                    ,Options: Options};
-};
-Elm.Editor = Elm.Editor || {};
-Elm.Editor.Ui = Elm.Editor.Ui || {};
-Elm.Editor.Ui.Slider = Elm.Editor.Ui.Slider || {};
-Elm.Editor.Ui.Slider.make = function (_elm) {
-   "use strict";
-   _elm.Editor = _elm.Editor || {};
-   _elm.Editor.Ui = _elm.Editor.Ui || {};
-   _elm.Editor.Ui.Slider = _elm.Editor.Ui.Slider || {};
-   if (_elm.Editor.Ui.Slider.values)
-   return _elm.Editor.Ui.Slider.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Basics = Elm.Basics.make(_elm),
-   $Debug = Elm.Debug.make(_elm),
-   $Editor$Action = Elm.Editor.Action.make(_elm),
-   $Html = Elm.Html.make(_elm),
-   $Html$Attributes = Elm.Html.Attributes.make(_elm),
-   $Html$Events = Elm.Html.Events.make(_elm),
-   $List = Elm.List.make(_elm),
-   $Maybe = Elm.Maybe.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm);
-   var _op = {};
-   var slider = function (_p0) {
-      var _p1 = _p0;
-      var _p2 = _p1.value;
-      return A2($Html.div,
-      _U.list([]),
-      _U.list([A2($Html.label,
-              _U.list([]),
-              _U.list([$Html.text(_p1.name)]))
-              ,A2($Html.input,
-              _U.list([A3($Html$Events.on,
-                      "input",
-                      $Html$Events.targetValue,
-                      function (str) {
-                         return A2($Signal.message,_p1.address,_p1.createAction(str));
-                      })
-                      ,$Html$Attributes.type$("range")
-                      ,$Html$Attributes.value(_p2)
-                      ,$Html$Attributes.max(_p1.max)
-                      ,$Html$Attributes.min(_p1.min)]),
-              _U.list([]))
-              ,A2($Html.span,_U.list([]),_U.list([$Html.text(_p2)]))]));
-   };
-   var SliderSettings = F6(function (a,b,c,d,e,f) {
-      return {name: a
-             ,min: b
-             ,max: c
-             ,value: d
-             ,address: e
-             ,createAction: f};
-   });
-   return _elm.Editor.Ui.Slider.values = {_op: _op
-                                         ,SliderSettings: SliderSettings
-                                         ,slider: slider};
-};
 Elm.Svg = Elm.Svg || {};
 Elm.Svg.make = function (_elm) {
    "use strict";
@@ -16483,6 +15248,1837 @@ Elm.Svg.Attributes.make = function (_elm) {
                                        ,writingMode: writingMode};
 };
 Elm.Editor = Elm.Editor || {};
+Elm.Editor.Util = Elm.Editor.Util || {};
+Elm.Editor.Util.Svg = Elm.Editor.Util.Svg || {};
+Elm.Editor.Util.Svg.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Util = _elm.Editor.Util || {};
+   _elm.Editor.Util.Svg = _elm.Editor.Util.Svg || {};
+   if (_elm.Editor.Util.Svg.values)
+   return _elm.Editor.Util.Svg.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Editor$Types = Elm.Editor.Types.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $String = Elm.String.make(_elm),
+   $Svg = Elm.Svg.make(_elm),
+   $Svg$Attributes = Elm.Svg.Attributes.make(_elm),
+   $WallpaperGroup$Group = Elm.WallpaperGroup.Group.make(_elm),
+   $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
+   var _op = {};
+   var pointToString = function (p) {
+      return A2($Basics._op["++"],
+      $Basics.toString(p.x),
+      A2($Basics._op["++"]," ",$Basics.toString(p.y)));
+   };
+   var renderPath = function (multiLine) {
+      var path = A2($Basics._op["++"],
+      "M ",
+      A2($Basics._op["++"],
+      A2($String.join," L ",A2($List.map,pointToString,multiLine)),
+      "z"));
+      return A2($Svg.path,
+      _U.list([$Svg$Attributes.d(path)
+              ,$Svg$Attributes.$class("tile")]),
+      _U.list([]));
+   };
+   var renderPaths = F4(function (group,columns,rows,tile) {
+      return A2($Svg.g,
+      _U.list([]),
+      $List.concat(A2($List.map,
+      function (t) {
+         return A2($List.map,renderPath,t);
+      },
+      A4($WallpaperGroup$Pattern.pattern,group,columns,rows,tile))));
+   });
+   var lineToAttribute = F2(function (_p0,attributes) {
+      var _p1 = _p0;
+      var _p3 = _p1.y;
+      var _p2 = _p1.x;
+      return _U.eq($List.length(attributes),0) ? A2($List.append,
+      _U.list([$Svg$Attributes.x1($Basics.toString(_p2))
+              ,$Svg$Attributes.y1($Basics.toString(_p3))]),
+      attributes) : A2($List.append,
+      _U.list([$Svg$Attributes.x2($Basics.toString(_p2))
+              ,$Svg$Attributes.y2($Basics.toString(_p3))]),
+      attributes);
+   });
+   var renderLine = function (line) {
+      return A2($Svg.line,
+      A3($List.foldl,lineToAttribute,_U.list([]),line),
+      _U.list([]));
+   };
+   var renderTile = function (tile) {
+      return A2($Svg.g,
+      _U.list([$Svg$Attributes.stroke("grey")]),
+      A2($List.map,renderLine,tile));
+   };
+   var renderTiles = F4(function (group,columns,rows,tile) {
+      return A2($Svg.g,
+      _U.list([]),
+      A2($List.map,
+      renderTile,
+      A4($WallpaperGroup$Pattern.pattern,group,columns,rows,tile)));
+   });
+   return _elm.Editor.Util.Svg.values = {_op: _op
+                                        ,lineToAttribute: lineToAttribute
+                                        ,pointToString: pointToString
+                                        ,renderPath: renderPath
+                                        ,renderPaths: renderPaths
+                                        ,renderLine: renderLine
+                                        ,renderTile: renderTile
+                                        ,renderTiles: renderTiles};
+};
+Elm.Editor = Elm.Editor || {};
+Elm.Editor.Ui = Elm.Editor.Ui || {};
+Elm.Editor.Ui.PatternStage = Elm.Editor.Ui.PatternStage || {};
+Elm.Editor.Ui.PatternStage.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Ui = _elm.Editor.Ui || {};
+   _elm.Editor.Ui.PatternStage = _elm.Editor.Ui.PatternStage || {};
+   if (_elm.Editor.Ui.PatternStage.values)
+   return _elm.Editor.Ui.PatternStage.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Editor$Types = Elm.Editor.Types.make(_elm),
+   $Editor$Util$Svg = Elm.Editor.Util.Svg.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $String = Elm.String.make(_elm),
+   $Svg = Elm.Svg.make(_elm),
+   $Svg$Attributes = Elm.Svg.Attributes.make(_elm);
+   var _op = {};
+   var getPatternAsString = function (model) {
+      return $Basics.toString(A2($Svg.a,
+      _U.list([]),
+      _U.list([$Svg.text("test")])));
+   };
+   var renderPath = function (_p0) {
+      var _p1 = _p0;
+      var _p5 = _p1.p1;
+      var _p4 = _p1.color;
+      var _p3 = _p1.c2;
+      var _p2 = _p1.c1;
+      var path = A2($String.join,
+      " ",
+      _U.list(["M"
+              ,$Editor$Util$Svg.pointToString(_p5)
+              ,"C"
+              ,$Editor$Util$Svg.pointToString(_p3)
+              ,$Editor$Util$Svg.pointToString(_p2)
+              ,$Editor$Util$Svg.pointToString(_p1.p2)
+              ,"C"
+              ,$Editor$Util$Svg.pointToString(_p2)
+              ,$Editor$Util$Svg.pointToString(_p3)
+              ,$Editor$Util$Svg.pointToString(_p5)
+              ,"Z"]));
+      return A2($Svg.path,
+      _U.list([$Svg$Attributes.d(path)
+              ,$Svg$Attributes.strokeWidth($Basics.toString(_p1.strokeWidth))
+              ,$Svg$Attributes.stroke(_p4)
+              ,$Svg$Attributes.opacity("1")
+              ,$Svg$Attributes.fill(_p4)
+              ,$Svg$Attributes.$class("tile")]),
+      _U.list([]));
+   };
+   var renderTile = function (tile) {
+      return A2($Svg.g,_U.list([]),A2($List.map,renderPath,tile));
+   };
+   var renderColorizedNoisyTiles = function (tiles) {
+      return A2($Svg.g,
+      _U.list([$Svg$Attributes.id("stage")]),
+      A2($List.map,renderTile,tiles));
+   };
+   var stage = function (model) {
+      return A2($Html.div,
+      _U.list([]),
+      _U.list([A2($Html.div,
+              _U.list([$Svg$Attributes.id("patternSvg")]),
+              _U.list([A2($Svg.svg,
+              _U.list([$Svg$Attributes.version("1.1")
+                      ,$Svg$Attributes.x("0")
+                      ,$Svg$Attributes.y("0")]),
+              _U.list([renderColorizedNoisyTiles(model)]))]))
+              ,A2($Svg.svg,
+              _U.list([$Svg$Attributes.id("filter-container")]),
+              _U.list([A2($Svg.defs,
+              _U.list([]),
+              _U.list([A2($Svg.filter,
+              _U.list([$Svg$Attributes.id("filter")]),
+              _U.list([A2($Svg.feImage,
+                      _U.list([$Svg$Attributes.xlinkHref("#stage")
+                              ,$Svg$Attributes.x("0")
+                              ,$Svg$Attributes.y("-100")
+                              ,$Svg$Attributes.result("IMAGEFILL")]),
+                      _U.list([]))
+                      ,A2($Svg.feTile,
+                      _U.list([$Svg$Attributes.in$("IMAGEFILL")
+                              ,$Svg$Attributes.result("TILEPATTERN")]),
+                      _U.list([]))
+                      ,A2($Svg.feFlood,
+                      _U.list([$Svg$Attributes.floodColor("#ffffff")
+                              ,$Svg$Attributes.result("BG-COLOR")]),
+                      _U.list([]))
+                      ,A2($Svg.feMerge,
+                      _U.list([$Svg$Attributes.result("BG-PATTERN")]),
+                      _U.list([A2($Svg.feMergeNode,
+                              _U.list([$Svg$Attributes.in$("BG-COLOR")]),
+                              _U.list([]))
+                              ,A2($Svg.feMergeNode,
+                              _U.list([$Svg$Attributes.in$("TILEPATTERN")]),
+                              _U.list([]))]))
+                      ,A2($Svg.feComposite,
+                      _U.list([$Svg$Attributes.operator("in")
+                              ,$Svg$Attributes.in$("BG-PATTERN")
+                              ,$Svg$Attributes.in2("SourceAlpha")]),
+                      _U.list([]))]))]))]))]));
+   };
+   var renderLine = function (_p6) {
+      var _p7 = _p6;
+      return A2($Svg.line,
+      A3($List.foldl,
+      $Editor$Util$Svg.lineToAttribute,
+      _U.list([]),
+      _p7._1),
+      _U.list([]));
+   };
+   return _elm.Editor.Ui.PatternStage.values = {_op: _op
+                                               ,renderLine: renderLine
+                                               ,renderPath: renderPath
+                                               ,renderTile: renderTile
+                                               ,renderColorizedNoisyTiles: renderColorizedNoisyTiles
+                                               ,getPatternAsString: getPatternAsString
+                                               ,stage: stage};
+};
+Elm.Native.Effects = {};
+Elm.Native.Effects.make = function(localRuntime) {
+
+	localRuntime.Native = localRuntime.Native || {};
+	localRuntime.Native.Effects = localRuntime.Native.Effects || {};
+	if (localRuntime.Native.Effects.values)
+	{
+		return localRuntime.Native.Effects.values;
+	}
+
+	var Task = Elm.Native.Task.make(localRuntime);
+	var Utils = Elm.Native.Utils.make(localRuntime);
+	var Signal = Elm.Signal.make(localRuntime);
+	var List = Elm.Native.List.make(localRuntime);
+
+
+	// polyfill so things will work even if rAF is not available for some reason
+	var _requestAnimationFrame =
+		typeof requestAnimationFrame !== 'undefined'
+			? requestAnimationFrame
+			: function(cb) { setTimeout(cb, 1000 / 60); }
+			;
+
+
+	// batchedSending and sendCallback implement a small state machine in order
+	// to schedule only one send(time) call per animation frame.
+	//
+	// Invariants:
+	// 1. In the NO_REQUEST state, there is never a scheduled sendCallback.
+	// 2. In the PENDING_REQUEST and EXTRA_REQUEST states, there is always exactly
+	//    one scheduled sendCallback.
+	var NO_REQUEST = 0;
+	var PENDING_REQUEST = 1;
+	var EXTRA_REQUEST = 2;
+	var state = NO_REQUEST;
+	var messageArray = [];
+
+
+	function batchedSending(address, tickMessages)
+	{
+		// insert ticks into the messageArray
+		var foundAddress = false;
+
+		for (var i = messageArray.length; i--; )
+		{
+			if (messageArray[i].address === address)
+			{
+				foundAddress = true;
+				messageArray[i].tickMessages = A3(List.foldl, List.cons, messageArray[i].tickMessages, tickMessages);
+				break;
+			}
+		}
+
+		if (!foundAddress)
+		{
+			messageArray.push({ address: address, tickMessages: tickMessages });
+		}
+
+		// do the appropriate state transition
+		switch (state)
+		{
+			case NO_REQUEST:
+				_requestAnimationFrame(sendCallback);
+				state = PENDING_REQUEST;
+				break;
+			case PENDING_REQUEST:
+				state = PENDING_REQUEST;
+				break;
+			case EXTRA_REQUEST:
+				state = PENDING_REQUEST;
+				break;
+		}
+	}
+
+
+	function sendCallback(time)
+	{
+		switch (state)
+		{
+			case NO_REQUEST:
+				// This state should not be possible. How can there be no
+				// request, yet somehow we are actively fulfilling a
+				// request?
+				throw new Error(
+					'Unexpected send callback.\n' +
+					'Please report this to <https://github.com/evancz/elm-effects/issues>.'
+				);
+
+			case PENDING_REQUEST:
+				// At this point, we do not *know* that another frame is
+				// needed, but we make an extra request to rAF just in
+				// case. It's possible to drop a frame if rAF is called
+				// too late, so we just do it preemptively.
+				_requestAnimationFrame(sendCallback);
+				state = EXTRA_REQUEST;
+
+				// There's also stuff we definitely need to send.
+				send(time);
+				return;
+
+			case EXTRA_REQUEST:
+				// Turns out the extra request was not needed, so we will
+				// stop calling rAF. No reason to call it all the time if
+				// no one needs it.
+				state = NO_REQUEST;
+				return;
+		}
+	}
+
+
+	function send(time)
+	{
+		for (var i = messageArray.length; i--; )
+		{
+			var messages = A3(
+				List.foldl,
+				F2( function(toAction, list) { return List.Cons(toAction(time), list); } ),
+				List.Nil,
+				messageArray[i].tickMessages
+			);
+			Task.perform( A2(Signal.send, messageArray[i].address, messages) );
+		}
+		messageArray = [];
+	}
+
+
+	function requestTickSending(address, tickMessages)
+	{
+		return Task.asyncFunction(function(callback) {
+			batchedSending(address, tickMessages);
+			callback(Task.succeed(Utils.Tuple0));
+		});
+	}
+
+
+	return localRuntime.Native.Effects.values = {
+		requestTickSending: F2(requestTickSending)
+	};
+
+};
+
+Elm.Effects = Elm.Effects || {};
+Elm.Effects.make = function (_elm) {
+   "use strict";
+   _elm.Effects = _elm.Effects || {};
+   if (_elm.Effects.values) return _elm.Effects.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Native$Effects = Elm.Native.Effects.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Task = Elm.Task.make(_elm),
+   $Time = Elm.Time.make(_elm);
+   var _op = {};
+   var ignore = function (task) {
+      return A2($Task.map,$Basics.always({ctor: "_Tuple0"}),task);
+   };
+   var requestTickSending = $Native$Effects.requestTickSending;
+   var toTaskHelp = F3(function (address,effect,_p0) {
+      var _p1 = _p0;
+      var _p5 = _p1._1;
+      var _p4 = _p1;
+      var _p3 = _p1._0;
+      var _p2 = effect;
+      switch (_p2.ctor)
+      {case "Task": var reporter = A2($Task.andThen,
+           _p2._0,
+           function (answer) {
+              return A2($Signal.send,address,_U.list([answer]));
+           });
+           return {ctor: "_Tuple2"
+                  ,_0: A2($Task.andThen,
+                  _p3,
+                  $Basics.always(ignore($Task.spawn(reporter))))
+                  ,_1: _p5};
+         case "Tick": return {ctor: "_Tuple2"
+                             ,_0: _p3
+                             ,_1: A2($List._op["::"],_p2._0,_p5)};
+         case "None": return _p4;
+         default: return A3($List.foldl,toTaskHelp(address),_p4,_p2._0);}
+   });
+   var toTask = F2(function (address,effect) {
+      var _p6 = A3(toTaskHelp,
+      address,
+      effect,
+      {ctor: "_Tuple2"
+      ,_0: $Task.succeed({ctor: "_Tuple0"})
+      ,_1: _U.list([])});
+      var combinedTask = _p6._0;
+      var tickMessages = _p6._1;
+      return $List.isEmpty(tickMessages) ? combinedTask : A2($Task.andThen,
+      combinedTask,
+      $Basics.always(A2(requestTickSending,address,tickMessages)));
+   });
+   var Never = function (a) {    return {ctor: "Never",_0: a};};
+   var Batch = function (a) {    return {ctor: "Batch",_0: a};};
+   var batch = Batch;
+   var None = {ctor: "None"};
+   var none = None;
+   var Tick = function (a) {    return {ctor: "Tick",_0: a};};
+   var tick = Tick;
+   var Task = function (a) {    return {ctor: "Task",_0: a};};
+   var task = Task;
+   var map = F2(function (func,effect) {
+      var _p7 = effect;
+      switch (_p7.ctor)
+      {case "Task": return Task(A2($Task.map,func,_p7._0));
+         case "Tick": return Tick(function (_p8) {
+              return func(_p7._0(_p8));
+           });
+         case "None": return None;
+         default: return Batch(A2($List.map,map(func),_p7._0));}
+   });
+   return _elm.Effects.values = {_op: _op
+                                ,none: none
+                                ,task: task
+                                ,tick: tick
+                                ,map: map
+                                ,batch: batch
+                                ,toTask: toTask};
+};
+Elm.Editor = Elm.Editor || {};
+Elm.Editor.Signals = Elm.Editor.Signals || {};
+Elm.Editor.Signals.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Signals = _elm.Editor.Signals || {};
+   if (_elm.Editor.Signals.values)
+   return _elm.Editor.Signals.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Signal$Time = Elm.Signal.Time.make(_elm),
+   $String = Elm.String.make(_elm),
+   $Time = Elm.Time.make(_elm);
+   var _op = {};
+   var setSvgString = $Signal.mailbox("");
+   var requestPalette = $Signal.mailbox("");
+   var requestPaletteFilter = A2($Signal$Time.settledAfter,
+   300 * $Time.millisecond,
+   A3($Signal.filter,
+   function (_p0) {
+      return $Basics.not($String.isEmpty(_p0));
+   },
+   "",
+   requestPalette.signal));
+   return _elm.Editor.Signals.values = {_op: _op
+                                       ,requestPalette: requestPalette
+                                       ,requestPaletteFilter: requestPaletteFilter
+                                       ,setSvgString: setSvgString};
+};
+Elm.Native.Http = {};
+Elm.Native.Http.make = function(localRuntime) {
+
+	localRuntime.Native = localRuntime.Native || {};
+	localRuntime.Native.Http = localRuntime.Native.Http || {};
+	if (localRuntime.Native.Http.values)
+	{
+		return localRuntime.Native.Http.values;
+	}
+
+	var Dict = Elm.Dict.make(localRuntime);
+	var List = Elm.List.make(localRuntime);
+	var Maybe = Elm.Maybe.make(localRuntime);
+	var Task = Elm.Native.Task.make(localRuntime);
+
+
+	function send(settings, request)
+	{
+		return Task.asyncFunction(function(callback) {
+			var req = new XMLHttpRequest();
+
+			// start
+			if (settings.onStart.ctor === 'Just')
+			{
+				req.addEventListener('loadStart', function() {
+					var task = settings.onStart._0;
+					Task.spawn(task);
+				});
+			}
+
+			// progress
+			if (settings.onProgress.ctor === 'Just')
+			{
+				req.addEventListener('progress', function(event) {
+					var progress = !event.lengthComputable
+						? Maybe.Nothing
+						: Maybe.Just({
+							_: {},
+							loaded: event.loaded,
+							total: event.total
+						});
+					var task = settings.onProgress._0(progress);
+					Task.spawn(task);
+				});
+			}
+
+			// end
+			req.addEventListener('error', function() {
+				return callback(Task.fail({ ctor: 'RawNetworkError' }));
+			});
+
+			req.addEventListener('timeout', function() {
+				return callback(Task.fail({ ctor: 'RawTimeout' }));
+			});
+
+			req.addEventListener('load', function() {
+				return callback(Task.succeed(toResponse(req)));
+			});
+
+			req.open(request.verb, request.url, true);
+
+			// set all the headers
+			function setHeader(pair) {
+				req.setRequestHeader(pair._0, pair._1);
+			}
+			A2(List.map, setHeader, request.headers);
+
+			// set the timeout
+			req.timeout = settings.timeout;
+
+			// enable this withCredentials thing
+			req.withCredentials = settings.withCredentials;
+
+			// ask for a specific MIME type for the response
+			if (settings.desiredResponseType.ctor === 'Just')
+			{
+				req.overrideMimeType(settings.desiredResponseType._0);
+			}
+
+			// actuall send the request
+			if(request.body.ctor === "BodyFormData")
+			{
+				req.send(request.body.formData)
+			}
+			else
+			{
+				req.send(request.body._0);
+			}
+		});
+	}
+
+
+	// deal with responses
+
+	function toResponse(req)
+	{
+		var tag = req.responseType === 'blob' ? 'Blob' : 'Text'
+		var response = tag === 'Blob' ? req.response : req.responseText;
+		return {
+			_: {},
+			status: req.status,
+			statusText: req.statusText,
+			headers: parseHeaders(req.getAllResponseHeaders()),
+			url: req.responseURL,
+			value: { ctor: tag, _0: response }
+		};
+	}
+
+
+	function parseHeaders(rawHeaders)
+	{
+		var headers = Dict.empty;
+
+		if (!rawHeaders)
+		{
+			return headers;
+		}
+
+		var headerPairs = rawHeaders.split('\u000d\u000a');
+		for (var i = headerPairs.length; i--; )
+		{
+			var headerPair = headerPairs[i];
+			var index = headerPair.indexOf('\u003a\u0020');
+			if (index > 0)
+			{
+				var key = headerPair.substring(0, index);
+				var value = headerPair.substring(index + 2);
+
+				headers = A3(Dict.update, key, function(oldValue) {
+					if (oldValue.ctor === 'Just')
+					{
+						return Maybe.Just(value + ', ' + oldValue._0);
+					}
+					return Maybe.Just(value);
+				}, headers);
+			}
+		}
+
+		return headers;
+	}
+
+
+	function multipart(dataList)
+	{
+		var formData = new FormData();
+
+		while (dataList.ctor !== '[]')
+		{
+			var data = dataList._0;
+			if (data.ctor === 'StringData')
+			{
+				formData.append(data._0, data._1);
+			}
+			else
+			{
+				var fileName = data._1.ctor === 'Nothing'
+					? undefined
+					: data._1._0;
+				formData.append(data._0, data._2, fileName);
+			}
+			dataList = dataList._1;
+		}
+
+		return { ctor: 'BodyFormData', formData: formData };
+	}
+
+
+	function uriEncode(string)
+	{
+		return encodeURIComponent(string);
+	}
+
+	function uriDecode(string)
+	{
+		return decodeURIComponent(string);
+	}
+
+	return localRuntime.Native.Http.values = {
+		send: F2(send),
+		multipart: multipart,
+		uriEncode: uriEncode,
+		uriDecode: uriDecode
+	};
+};
+
+Elm.Http = Elm.Http || {};
+Elm.Http.make = function (_elm) {
+   "use strict";
+   _elm.Http = _elm.Http || {};
+   if (_elm.Http.values) return _elm.Http.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Dict = Elm.Dict.make(_elm),
+   $Json$Decode = Elm.Json.Decode.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Native$Http = Elm.Native.Http.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $String = Elm.String.make(_elm),
+   $Task = Elm.Task.make(_elm),
+   $Time = Elm.Time.make(_elm);
+   var _op = {};
+   var send = $Native$Http.send;
+   var BadResponse = F2(function (a,b) {
+      return {ctor: "BadResponse",_0: a,_1: b};
+   });
+   var UnexpectedPayload = function (a) {
+      return {ctor: "UnexpectedPayload",_0: a};
+   };
+   var handleResponse = F2(function (handle,response) {
+      if (_U.cmp(200,
+      response.status) < 1 && _U.cmp(response.status,300) < 0) {
+            var _p0 = response.value;
+            if (_p0.ctor === "Text") {
+                  return handle(_p0._0);
+               } else {
+                  return $Task.fail(UnexpectedPayload("Response body is a blob, expecting a string."));
+               }
+         } else return $Task.fail(A2(BadResponse,
+         response.status,
+         response.statusText));
+   });
+   var NetworkError = {ctor: "NetworkError"};
+   var Timeout = {ctor: "Timeout"};
+   var promoteError = function (rawError) {
+      var _p1 = rawError;
+      if (_p1.ctor === "RawTimeout") {
+            return Timeout;
+         } else {
+            return NetworkError;
+         }
+   };
+   var fromJson = F2(function (decoder,response) {
+      var decode = function (str) {
+         var _p2 = A2($Json$Decode.decodeString,decoder,str);
+         if (_p2.ctor === "Ok") {
+               return $Task.succeed(_p2._0);
+            } else {
+               return $Task.fail(UnexpectedPayload(_p2._0));
+            }
+      };
+      return A2($Task.andThen,
+      A2($Task.mapError,promoteError,response),
+      handleResponse(decode));
+   });
+   var RawNetworkError = {ctor: "RawNetworkError"};
+   var RawTimeout = {ctor: "RawTimeout"};
+   var Blob = function (a) {    return {ctor: "Blob",_0: a};};
+   var Text = function (a) {    return {ctor: "Text",_0: a};};
+   var Response = F5(function (a,b,c,d,e) {
+      return {status: a,statusText: b,headers: c,url: d,value: e};
+   });
+   var defaultSettings = {timeout: 0
+                         ,onStart: $Maybe.Nothing
+                         ,onProgress: $Maybe.Nothing
+                         ,desiredResponseType: $Maybe.Nothing
+                         ,withCredentials: false};
+   var post = F3(function (decoder,url,body) {
+      var request = {verb: "POST"
+                    ,headers: _U.list([])
+                    ,url: url
+                    ,body: body};
+      return A2(fromJson,decoder,A2(send,defaultSettings,request));
+   });
+   var Settings = F5(function (a,b,c,d,e) {
+      return {timeout: a
+             ,onStart: b
+             ,onProgress: c
+             ,desiredResponseType: d
+             ,withCredentials: e};
+   });
+   var multipart = $Native$Http.multipart;
+   var FileData = F3(function (a,b,c) {
+      return {ctor: "FileData",_0: a,_1: b,_2: c};
+   });
+   var BlobData = F3(function (a,b,c) {
+      return {ctor: "BlobData",_0: a,_1: b,_2: c};
+   });
+   var blobData = BlobData;
+   var StringData = F2(function (a,b) {
+      return {ctor: "StringData",_0: a,_1: b};
+   });
+   var stringData = StringData;
+   var BodyBlob = function (a) {
+      return {ctor: "BodyBlob",_0: a};
+   };
+   var BodyFormData = {ctor: "BodyFormData"};
+   var ArrayBuffer = {ctor: "ArrayBuffer"};
+   var BodyString = function (a) {
+      return {ctor: "BodyString",_0: a};
+   };
+   var string = BodyString;
+   var Empty = {ctor: "Empty"};
+   var empty = Empty;
+   var getString = function (url) {
+      var request = {verb: "GET"
+                    ,headers: _U.list([])
+                    ,url: url
+                    ,body: empty};
+      return A2($Task.andThen,
+      A2($Task.mapError,
+      promoteError,
+      A2(send,defaultSettings,request)),
+      handleResponse($Task.succeed));
+   };
+   var get = F2(function (decoder,url) {
+      var request = {verb: "GET"
+                    ,headers: _U.list([])
+                    ,url: url
+                    ,body: empty};
+      return A2(fromJson,decoder,A2(send,defaultSettings,request));
+   });
+   var Request = F4(function (a,b,c,d) {
+      return {verb: a,headers: b,url: c,body: d};
+   });
+   var uriDecode = $Native$Http.uriDecode;
+   var uriEncode = $Native$Http.uriEncode;
+   var queryEscape = function (string) {
+      return A2($String.join,
+      "+",
+      A2($String.split,"%20",uriEncode(string)));
+   };
+   var queryPair = function (_p3) {
+      var _p4 = _p3;
+      return A2($Basics._op["++"],
+      queryEscape(_p4._0),
+      A2($Basics._op["++"],"=",queryEscape(_p4._1)));
+   };
+   var url = F2(function (baseUrl,args) {
+      var _p5 = args;
+      if (_p5.ctor === "[]") {
+            return baseUrl;
+         } else {
+            return A2($Basics._op["++"],
+            baseUrl,
+            A2($Basics._op["++"],
+            "?",
+            A2($String.join,"&",A2($List.map,queryPair,args))));
+         }
+   });
+   var TODO_implement_file_in_another_library = {ctor: "TODO_implement_file_in_another_library"};
+   var TODO_implement_blob_in_another_library = {ctor: "TODO_implement_blob_in_another_library"};
+   return _elm.Http.values = {_op: _op
+                             ,getString: getString
+                             ,get: get
+                             ,post: post
+                             ,send: send
+                             ,url: url
+                             ,uriEncode: uriEncode
+                             ,uriDecode: uriDecode
+                             ,empty: empty
+                             ,string: string
+                             ,multipart: multipart
+                             ,stringData: stringData
+                             ,defaultSettings: defaultSettings
+                             ,fromJson: fromJson
+                             ,Request: Request
+                             ,Settings: Settings
+                             ,Response: Response
+                             ,Text: Text
+                             ,Blob: Blob
+                             ,Timeout: Timeout
+                             ,NetworkError: NetworkError
+                             ,UnexpectedPayload: UnexpectedPayload
+                             ,BadResponse: BadResponse
+                             ,RawTimeout: RawTimeout
+                             ,RawNetworkError: RawNetworkError};
+};
+Elm.Editor = Elm.Editor || {};
+Elm.Editor.Action = Elm.Editor.Action || {};
+Elm.Editor.Action.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Action = _elm.Editor.Action || {};
+   if (_elm.Editor.Action.values) return _elm.Editor.Action.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Array = Elm.Array.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Editor$Model = Elm.Editor.Model.make(_elm),
+   $Editor$Signals = Elm.Editor.Signals.make(_elm),
+   $Editor$Types = Elm.Editor.Types.make(_elm),
+   $Editor$Util$Color = Elm.Editor.Util.Color.make(_elm),
+   $Editor$Util$Geom = Elm.Editor.Util.Geom.make(_elm),
+   $Editor$Util$Groups = Elm.Editor.Util.Groups.make(_elm),
+   $Editor$Util$History = Elm.Editor.Util.History.make(_elm),
+   $Editor$Util$Pattern = Elm.Editor.Util.Pattern.make(_elm),
+   $Editor$Util$Raster = Elm.Editor.Util.Raster.make(_elm),
+   $Editor$Util$TileSize = Elm.Editor.Util.TileSize.make(_elm),
+   $Effects = Elm.Effects.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Random = Elm.Random.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Task = Elm.Task.make(_elm),
+   $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
+   var _op = {};
+   var getRandom = F3(function (seed,min,max) {
+      var generator = A2($Random.$int,min,max);
+      return A2($Random.generate,generator,seed);
+   });
+   var getRandomCoord = F3(function (points,seed,i) {
+      var getValue = function (item) {
+         var _p0 = item;
+         if (_p0.ctor === "Just") {
+               return _p0._0;
+            } else {
+               return {x: 0,y: 0};
+            }
+      };
+      var seed$ = $Random.initialSeed(i + $Basics.fst(A3(getRandom,
+      seed,
+      $Random.minInt,
+      $Random.maxInt)));
+      var _p1 = A3(getRandom,seed$,0,$List.length(points) - 1);
+      var i1 = _p1._0;
+      var seed$$ = _p1._1;
+      var _p2 = A3(getRandom,seed$$,0,$List.length(points) - 1);
+      var i2 = _p2._0;
+      return _U.list([getValue(A2($Array.get,
+                     i1,
+                     $Array.fromList(points)))
+                     ,getValue(A2($Array.get,i2,$Array.fromList(points)))]);
+   });
+   var SetDownloadURI = {ctor: "SetDownloadURI"};
+   var ToggleHelp = function (a) {
+      return {ctor: "ToggleHelp",_0: a};
+   };
+   var UpadtePattern = {ctor: "UpadtePattern"};
+   var ClosePallete = {ctor: "ClosePallete"};
+   var TogglePallete = function (a) {
+      return {ctor: "TogglePallete",_0: a};
+   };
+   var SelectPalette = function (a) {
+      return {ctor: "SelectPalette",_0: a};
+   };
+   var NewColors = function (a) {
+      return {ctor: "NewColors",_0: a};
+   };
+   var StartColorSearch = function (a) {
+      return {ctor: "StartColorSearch",_0: a};
+   };
+   var Redo = {ctor: "Redo"};
+   var Undo = {ctor: "Undo"};
+   var Random = {ctor: "Random"};
+   var ClearTiles = {ctor: "ClearTiles"};
+   var DeleteLine = function (a) {
+      return {ctor: "DeleteLine",_0: a};
+   };
+   var LineEnd = function (a) {
+      return {ctor: "LineEnd",_0: a};
+   };
+   var LineMove = function (a) {
+      return {ctor: "LineMove",_0: a};
+   };
+   var LineStart = function (a) {
+      return {ctor: "LineStart",_0: a};
+   };
+   var RasterSize = function (a) {
+      return {ctor: "RasterSize",_0: a};
+   };
+   var Group = function (a) {    return {ctor: "Group",_0: a};};
+   var NoiseDesctruction = function (a) {
+      return {ctor: "NoiseDesctruction",_0: a};
+   };
+   var NoiseZ = function (a) {    return {ctor: "NoiseZ",_0: a};};
+   var NoiseY = function (a) {    return {ctor: "NoiseY",_0: a};};
+   var NoiseX = function (a) {    return {ctor: "NoiseX",_0: a};};
+   var Rows = function (a) {    return {ctor: "Rows",_0: a};};
+   var Columns = function (a) {
+      return {ctor: "Columns",_0: a};
+   };
+   var NoOp = {ctor: "NoOp"};
+   var update = F2(function (action,model) {
+      var colorState = model.colorState;
+      var drawingState = model.drawingState;
+      var patternState = model.patternState;
+      var _p3 = action;
+      switch (_p3.ctor)
+      {case "NoOp": return {ctor: "_Tuple2"
+                           ,_0: model
+                           ,_1: $Effects.none};
+         case "Rows": var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{rows: _p3._0})}))
+                  ,_1: $Effects.none};
+         case "Columns":
+         var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{columns: _p3._0})}))
+                  ,_1: $Effects.none};
+         case "NoiseX":
+         var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{noiseX: _p3._0})}))
+                  ,_1: $Effects.none};
+         case "NoiseY":
+         var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{noiseY: _p3._0})}))
+                  ,_1: $Effects.none};
+         case "NoiseZ":
+         var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{noiseZ: _p3._0})}))
+                  ,_1: $Effects.none};
+         case "NoiseDesctruction":
+         var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,
+                  {noiseDesctruction: _p3._0})}))
+                  ,_1: $Effects.none};
+         case "Group": var _p4 = _p3._0;
+           var groupSize = $Editor$Util$TileSize.getTileSize(_p4);
+           var previewGroupSize = $Editor$Util$TileSize.getPreviewTileSize(_p4);
+           var previewGroup = A3($Editor$Util$Groups.getGroup,
+           _p4,
+           previewGroupSize,
+           previewGroupSize);
+           var boundingBox = $WallpaperGroup$Pattern.bounding(previewGroup);
+           var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,
+                  {group: A3($Editor$Util$Groups.getGroup,_p4,groupSize,groupSize)
+                  ,previewGroup: previewGroup
+                  ,groupType: _p4
+                  ,boundingBox: boundingBox})
+                  ,drawingState: _U.update(drawingState,
+                  {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
+                  patternState.rasterSize,
+                  $WallpaperGroup$Pattern.bounding(A3($Editor$Util$Groups.getGroup,
+                  _p4,
+                  previewGroupSize,
+                  previewGroupSize)))})}))
+                  ,_1: $Effects.none};
+         case "RasterSize": var _p5 = _p3._0;
+           var model = $Editor$Util$History.addHistory(model);
+           var previewGroupSize = $Editor$Util$TileSize.getPreviewTileSize(model.patternState.groupType);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,
+                  {rasterSize: _p5,tile: _U.list([])})
+                  ,drawingState: _U.update(drawingState,
+                  {rasterCoords: A2($Editor$Util$Raster.rasterCoords,
+                  _p5,
+                  $WallpaperGroup$Pattern.bounding(A3($Editor$Util$Groups.getGroup,
+                  patternState.groupType,
+                  previewGroupSize,
+                  previewGroupSize)))})}))
+                  ,_1: $Effects.none};
+         case "LineStart": var _p6 = _p3._0;
+           return {ctor: "_Tuple2"
+                  ,_0: _U.update(model,
+                  {drawingState: _U.update(drawingState,
+                  {lineStart: A2($Editor$Util$Geom.snap,
+                  drawingState.rasterCoords,
+                  _p6)
+                  ,lineEnd: A2($Editor$Util$Geom.snap,
+                  drawingState.rasterCoords,
+                  _p6)
+                  ,isDrawing: true})})
+                  ,_1: $Effects.none};
+         case "LineMove":
+         return drawingState.isDrawing ? {ctor: "_Tuple2"
+                                         ,_0: _U.update(model,
+                                         {drawingState: _U.update(drawingState,
+                                         {lineEnd: A2($Editor$Util$Geom.snap,
+                                         drawingState.rasterCoords,
+                                         _p3._0)})})
+                                         ,_1: $Effects.none} : {ctor: "_Tuple2"
+                                                               ,_0: model
+                                                               ,_1: $Effects.none};
+         case "LineEnd": if (drawingState.isDrawing) {
+                 var tile = A2($List._op["::"],
+                 _U.list([drawingState.lineStart,drawingState.lineEnd]),
+                 patternState.tile);
+                 var model = $Editor$Util$History.addHistory(model);
+                 return {ctor: "_Tuple2"
+                        ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                        {drawingState: _U.update(drawingState,{isDrawing: false})
+                        ,patternState: _U.update(patternState,{tile: tile})}))
+                        ,_1: $Effects.none};
+              } else return {ctor: "_Tuple2",_0: model,_1: $Effects.none};
+         case "DeleteLine": var tile = A2($List.filter,
+           A2($Editor$Util$Geom.lineIsNearPoint,_p3._0,10),
+           patternState.tile);
+           var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{tile: tile})}))
+                  ,_1: $Effects.none};
+         case "ClearTiles":
+         var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: _U.update(model,
+                  {patternState: _U.update(patternState,
+                  {tile: _U.list([]),noise: _U.list([]),pattern: _U.list([])})})
+                  ,_1: $Effects.none};
+         case "Random":
+         var model = $Editor$Util$History.addHistory(model);
+           var _p7 = A3(getRandom,model.seed,3,10);
+           var i = _p7._0;
+           var seed$ = _p7._1;
+           var tile = A2($List.map,
+           A2(getRandomCoord,drawingState.rasterCoords,seed$),
+           _U.range(1,i));
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {patternState: _U.update(patternState,{tile: tile})
+                  ,seed: seed$}))
+                  ,_1: $Effects.none};
+         case "Undo": return {ctor: "_Tuple2"
+                             ,_0: $Editor$Util$History.undo(model)
+                             ,_1: $Effects.none};
+         case "Redo": return {ctor: "_Tuple2"
+                             ,_0: $Editor$Util$History.redo(model)
+                             ,_1: $Effects.none};
+         case "StartColorSearch": var _p9 = _p3._0;
+           var sendTask = $Effects.task(A2($Task.andThen,
+           A2($Signal.send,$Editor$Signals.requestPalette.address,_p9),
+           function (_p8) {
+              return $Task.succeed(NoOp);
+           }));
+           var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: _U.update(model,
+                  {colorState: _U.update(colorState,
+                  {colorSearch: _p9,loading: true})})
+                  ,_1: sendTask};
+         case "NewColors": var _p10 = _p3._0;
+           if (_p10.ctor === "Ok") {
+                 return {ctor: "_Tuple2"
+                        ,_0: _U.update(model,
+                        {colorState: _U.update(colorState,
+                        {palettes: _p10._0,loading: false})})
+                        ,_1: $Effects.none};
+              } else {
+                 return {ctor: "_Tuple2"
+                        ,_0: _U.update(model,
+                        {colorState: _U.update(colorState,
+                        {palettes: _U.list([]),loading: false})})
+                        ,_1: $Effects.none};
+              }
+         case "SelectPalette": var _p11 = _p3._0;
+           var p = $Editor$Util$Color.toGradient(_p11);
+           var model = $Editor$Util$History.addHistory(model);
+           return {ctor: "_Tuple2"
+                  ,_0: $Editor$Util$Pattern.updatePatternInModel(_U.update(model,
+                  {colorState: _U.update(colorState,
+                  {selectedGradient: p,selectedPalette: _p11})}))
+                  ,_1: $Effects.none};
+         case "TogglePallete": var _p13 = _p3._0;
+           return _p13 ? {ctor: "_Tuple2"
+                         ,_0: _U.update(model,
+                         {colorState: _U.update(colorState,{paletteOpen: _p13})})
+                         ,_1: $Effects.none} : {ctor: "_Tuple2"
+                                               ,_0: model
+                                               ,_1: $Effects.task(A2($Task.andThen,
+                                               $Task.sleep(300),
+                                               function (_p12) {
+                                                  return $Task.succeed(ClosePallete);
+                                               }))};
+         case "ClosePallete": return {ctor: "_Tuple2"
+                                     ,_0: _U.update(model,
+                                     {colorState: _U.update(colorState,{paletteOpen: false})})
+                                     ,_1: $Effects.none};
+         case "UpadtePattern": return {ctor: "_Tuple2"
+                                      ,_0: $Editor$Util$Pattern.updatePatternInModel(model)
+                                      ,_1: $Effects.none};
+         case "ToggleHelp": return {ctor: "_Tuple2"
+                                   ,_0: _U.update(model,{showHelp: _p3._0})
+                                   ,_1: $Effects.none};
+         default: return {ctor: "_Tuple2"
+                         ,_0: model
+                         ,_1: $Effects.task(A2($Task.andThen,
+                         A2($Signal.send,$Editor$Signals.setSvgString.address,""),
+                         function (_p14) {
+                            return $Task.succeed(NoOp);
+                         }))};}
+   });
+   return _elm.Editor.Action.values = {_op: _op
+                                      ,NoOp: NoOp
+                                      ,Columns: Columns
+                                      ,Rows: Rows
+                                      ,NoiseX: NoiseX
+                                      ,NoiseY: NoiseY
+                                      ,NoiseZ: NoiseZ
+                                      ,NoiseDesctruction: NoiseDesctruction
+                                      ,Group: Group
+                                      ,RasterSize: RasterSize
+                                      ,LineStart: LineStart
+                                      ,LineMove: LineMove
+                                      ,LineEnd: LineEnd
+                                      ,DeleteLine: DeleteLine
+                                      ,ClearTiles: ClearTiles
+                                      ,Random: Random
+                                      ,Undo: Undo
+                                      ,Redo: Redo
+                                      ,StartColorSearch: StartColorSearch
+                                      ,NewColors: NewColors
+                                      ,SelectPalette: SelectPalette
+                                      ,TogglePallete: TogglePallete
+                                      ,ClosePallete: ClosePallete
+                                      ,UpadtePattern: UpadtePattern
+                                      ,ToggleHelp: ToggleHelp
+                                      ,SetDownloadURI: SetDownloadURI
+                                      ,getRandom: getRandom
+                                      ,getRandomCoord: getRandomCoord
+                                      ,update: update};
+};
+Elm.StartApp = Elm.StartApp || {};
+Elm.StartApp.make = function (_elm) {
+   "use strict";
+   _elm.StartApp = _elm.StartApp || {};
+   if (_elm.StartApp.values) return _elm.StartApp.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Effects = Elm.Effects.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Task = Elm.Task.make(_elm);
+   var _op = {};
+   var start = function (config) {
+      var updateStep = F2(function (action,_p0) {
+         var _p1 = _p0;
+         var _p2 = A2(config.update,action,_p1._0);
+         var newModel = _p2._0;
+         var additionalEffects = _p2._1;
+         return {ctor: "_Tuple2"
+                ,_0: newModel
+                ,_1: $Effects.batch(_U.list([_p1._1,additionalEffects]))};
+      });
+      var update = F2(function (actions,_p3) {
+         var _p4 = _p3;
+         return A3($List.foldl,
+         updateStep,
+         {ctor: "_Tuple2",_0: _p4._0,_1: $Effects.none},
+         actions);
+      });
+      var messages = $Signal.mailbox(_U.list([]));
+      var singleton = function (action) {
+         return _U.list([action]);
+      };
+      var address = A2($Signal.forwardTo,messages.address,singleton);
+      var inputs = $Signal.mergeMany(A2($List._op["::"],
+      messages.signal,
+      A2($List.map,$Signal.map(singleton),config.inputs)));
+      var effectsAndModel = A3($Signal.foldp,
+      update,
+      config.init,
+      inputs);
+      var model = A2($Signal.map,$Basics.fst,effectsAndModel);
+      return {html: A2($Signal.map,config.view(address),model)
+             ,model: model
+             ,tasks: A2($Signal.map,
+             function (_p5) {
+                return A2($Effects.toTask,messages.address,$Basics.snd(_p5));
+             },
+             effectsAndModel)};
+   };
+   var App = F3(function (a,b,c) {
+      return {html: a,model: b,tasks: c};
+   });
+   var Config = F4(function (a,b,c,d) {
+      return {init: a,update: b,view: c,inputs: d};
+   });
+   return _elm.StartApp.values = {_op: _op
+                                 ,start: start
+                                 ,Config: Config
+                                 ,App: App};
+};
+Elm.Html = Elm.Html || {};
+Elm.Html.Attributes = Elm.Html.Attributes || {};
+Elm.Html.Attributes.make = function (_elm) {
+   "use strict";
+   _elm.Html = _elm.Html || {};
+   _elm.Html.Attributes = _elm.Html.Attributes || {};
+   if (_elm.Html.Attributes.values)
+   return _elm.Html.Attributes.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Json$Encode = Elm.Json.Encode.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $String = Elm.String.make(_elm),
+   $VirtualDom = Elm.VirtualDom.make(_elm);
+   var _op = {};
+   var attribute = $VirtualDom.attribute;
+   var contextmenu = function (value) {
+      return A2(attribute,"contextmenu",value);
+   };
+   var property = $VirtualDom.property;
+   var stringProperty = F2(function (name,string) {
+      return A2(property,name,$Json$Encode.string(string));
+   });
+   var $class = function (name) {
+      return A2(stringProperty,"className",name);
+   };
+   var id = function (name) {
+      return A2(stringProperty,"id",name);
+   };
+   var title = function (name) {
+      return A2(stringProperty,"title",name);
+   };
+   var accesskey = function ($char) {
+      return A2(stringProperty,
+      "accessKey",
+      $String.fromChar($char));
+   };
+   var dir = function (value) {
+      return A2(stringProperty,"dir",value);
+   };
+   var draggable = function (value) {
+      return A2(stringProperty,"draggable",value);
+   };
+   var dropzone = function (value) {
+      return A2(stringProperty,"dropzone",value);
+   };
+   var itemprop = function (value) {
+      return A2(stringProperty,"itemprop",value);
+   };
+   var lang = function (value) {
+      return A2(stringProperty,"lang",value);
+   };
+   var tabindex = function (n) {
+      return A2(stringProperty,"tabIndex",$Basics.toString(n));
+   };
+   var charset = function (value) {
+      return A2(stringProperty,"charset",value);
+   };
+   var content = function (value) {
+      return A2(stringProperty,"content",value);
+   };
+   var httpEquiv = function (value) {
+      return A2(stringProperty,"httpEquiv",value);
+   };
+   var language = function (value) {
+      return A2(stringProperty,"language",value);
+   };
+   var src = function (value) {
+      return A2(stringProperty,"src",value);
+   };
+   var height = function (value) {
+      return A2(stringProperty,"height",$Basics.toString(value));
+   };
+   var width = function (value) {
+      return A2(stringProperty,"width",$Basics.toString(value));
+   };
+   var alt = function (value) {
+      return A2(stringProperty,"alt",value);
+   };
+   var preload = function (value) {
+      return A2(stringProperty,"preload",value);
+   };
+   var poster = function (value) {
+      return A2(stringProperty,"poster",value);
+   };
+   var kind = function (value) {
+      return A2(stringProperty,"kind",value);
+   };
+   var srclang = function (value) {
+      return A2(stringProperty,"srclang",value);
+   };
+   var sandbox = function (value) {
+      return A2(stringProperty,"sandbox",value);
+   };
+   var srcdoc = function (value) {
+      return A2(stringProperty,"srcdoc",value);
+   };
+   var type$ = function (value) {
+      return A2(stringProperty,"type",value);
+   };
+   var value = function (value) {
+      return A2(stringProperty,"value",value);
+   };
+   var placeholder = function (value) {
+      return A2(stringProperty,"placeholder",value);
+   };
+   var accept = function (value) {
+      return A2(stringProperty,"accept",value);
+   };
+   var acceptCharset = function (value) {
+      return A2(stringProperty,"acceptCharset",value);
+   };
+   var action = function (value) {
+      return A2(stringProperty,"action",value);
+   };
+   var autocomplete = function (bool) {
+      return A2(stringProperty,"autocomplete",bool ? "on" : "off");
+   };
+   var autosave = function (value) {
+      return A2(stringProperty,"autosave",value);
+   };
+   var enctype = function (value) {
+      return A2(stringProperty,"enctype",value);
+   };
+   var formaction = function (value) {
+      return A2(stringProperty,"formAction",value);
+   };
+   var list = function (value) {
+      return A2(stringProperty,"list",value);
+   };
+   var minlength = function (n) {
+      return A2(stringProperty,"minLength",$Basics.toString(n));
+   };
+   var maxlength = function (n) {
+      return A2(stringProperty,"maxLength",$Basics.toString(n));
+   };
+   var method = function (value) {
+      return A2(stringProperty,"method",value);
+   };
+   var name = function (value) {
+      return A2(stringProperty,"name",value);
+   };
+   var pattern = function (value) {
+      return A2(stringProperty,"pattern",value);
+   };
+   var size = function (n) {
+      return A2(stringProperty,"size",$Basics.toString(n));
+   };
+   var $for = function (value) {
+      return A2(stringProperty,"htmlFor",value);
+   };
+   var form = function (value) {
+      return A2(stringProperty,"form",value);
+   };
+   var max = function (value) {
+      return A2(stringProperty,"max",value);
+   };
+   var min = function (value) {
+      return A2(stringProperty,"min",value);
+   };
+   var step = function (n) {
+      return A2(stringProperty,"step",n);
+   };
+   var cols = function (n) {
+      return A2(stringProperty,"cols",$Basics.toString(n));
+   };
+   var rows = function (n) {
+      return A2(stringProperty,"rows",$Basics.toString(n));
+   };
+   var wrap = function (value) {
+      return A2(stringProperty,"wrap",value);
+   };
+   var usemap = function (value) {
+      return A2(stringProperty,"useMap",value);
+   };
+   var shape = function (value) {
+      return A2(stringProperty,"shape",value);
+   };
+   var coords = function (value) {
+      return A2(stringProperty,"coords",value);
+   };
+   var challenge = function (value) {
+      return A2(stringProperty,"challenge",value);
+   };
+   var keytype = function (value) {
+      return A2(stringProperty,"keytype",value);
+   };
+   var align = function (value) {
+      return A2(stringProperty,"align",value);
+   };
+   var cite = function (value) {
+      return A2(stringProperty,"cite",value);
+   };
+   var href = function (value) {
+      return A2(stringProperty,"href",value);
+   };
+   var target = function (value) {
+      return A2(stringProperty,"target",value);
+   };
+   var downloadAs = function (value) {
+      return A2(stringProperty,"download",value);
+   };
+   var hreflang = function (value) {
+      return A2(stringProperty,"hreflang",value);
+   };
+   var media = function (value) {
+      return A2(stringProperty,"media",value);
+   };
+   var ping = function (value) {
+      return A2(stringProperty,"ping",value);
+   };
+   var rel = function (value) {
+      return A2(stringProperty,"rel",value);
+   };
+   var datetime = function (value) {
+      return A2(stringProperty,"datetime",value);
+   };
+   var pubdate = function (value) {
+      return A2(stringProperty,"pubdate",value);
+   };
+   var start = function (n) {
+      return A2(stringProperty,"start",$Basics.toString(n));
+   };
+   var colspan = function (n) {
+      return A2(stringProperty,"colSpan",$Basics.toString(n));
+   };
+   var headers = function (value) {
+      return A2(stringProperty,"headers",value);
+   };
+   var rowspan = function (n) {
+      return A2(stringProperty,"rowSpan",$Basics.toString(n));
+   };
+   var scope = function (value) {
+      return A2(stringProperty,"scope",value);
+   };
+   var manifest = function (value) {
+      return A2(stringProperty,"manifest",value);
+   };
+   var boolProperty = F2(function (name,bool) {
+      return A2(property,name,$Json$Encode.bool(bool));
+   });
+   var hidden = function (bool) {
+      return A2(boolProperty,"hidden",bool);
+   };
+   var contenteditable = function (bool) {
+      return A2(boolProperty,"contentEditable",bool);
+   };
+   var spellcheck = function (bool) {
+      return A2(boolProperty,"spellcheck",bool);
+   };
+   var async = function (bool) {
+      return A2(boolProperty,"async",bool);
+   };
+   var defer = function (bool) {
+      return A2(boolProperty,"defer",bool);
+   };
+   var scoped = function (bool) {
+      return A2(boolProperty,"scoped",bool);
+   };
+   var autoplay = function (bool) {
+      return A2(boolProperty,"autoplay",bool);
+   };
+   var controls = function (bool) {
+      return A2(boolProperty,"controls",bool);
+   };
+   var loop = function (bool) {
+      return A2(boolProperty,"loop",bool);
+   };
+   var $default = function (bool) {
+      return A2(boolProperty,"default",bool);
+   };
+   var seamless = function (bool) {
+      return A2(boolProperty,"seamless",bool);
+   };
+   var checked = function (bool) {
+      return A2(boolProperty,"checked",bool);
+   };
+   var selected = function (bool) {
+      return A2(boolProperty,"selected",bool);
+   };
+   var autofocus = function (bool) {
+      return A2(boolProperty,"autofocus",bool);
+   };
+   var disabled = function (bool) {
+      return A2(boolProperty,"disabled",bool);
+   };
+   var multiple = function (bool) {
+      return A2(boolProperty,"multiple",bool);
+   };
+   var novalidate = function (bool) {
+      return A2(boolProperty,"noValidate",bool);
+   };
+   var readonly = function (bool) {
+      return A2(boolProperty,"readOnly",bool);
+   };
+   var required = function (bool) {
+      return A2(boolProperty,"required",bool);
+   };
+   var ismap = function (value) {
+      return A2(boolProperty,"isMap",value);
+   };
+   var download = function (bool) {
+      return A2(boolProperty,"download",bool);
+   };
+   var reversed = function (bool) {
+      return A2(boolProperty,"reversed",bool);
+   };
+   var classList = function (list) {
+      return $class(A2($String.join,
+      " ",
+      A2($List.map,$Basics.fst,A2($List.filter,$Basics.snd,list))));
+   };
+   var style = function (props) {
+      return A2(property,
+      "style",
+      $Json$Encode.object(A2($List.map,
+      function (_p0) {
+         var _p1 = _p0;
+         return {ctor: "_Tuple2"
+                ,_0: _p1._0
+                ,_1: $Json$Encode.string(_p1._1)};
+      },
+      props)));
+   };
+   var key = function (k) {    return A2(stringProperty,"key",k);};
+   return _elm.Html.Attributes.values = {_op: _op
+                                        ,key: key
+                                        ,style: style
+                                        ,$class: $class
+                                        ,classList: classList
+                                        ,id: id
+                                        ,title: title
+                                        ,hidden: hidden
+                                        ,type$: type$
+                                        ,value: value
+                                        ,checked: checked
+                                        ,placeholder: placeholder
+                                        ,selected: selected
+                                        ,accept: accept
+                                        ,acceptCharset: acceptCharset
+                                        ,action: action
+                                        ,autocomplete: autocomplete
+                                        ,autofocus: autofocus
+                                        ,autosave: autosave
+                                        ,disabled: disabled
+                                        ,enctype: enctype
+                                        ,formaction: formaction
+                                        ,list: list
+                                        ,maxlength: maxlength
+                                        ,minlength: minlength
+                                        ,method: method
+                                        ,multiple: multiple
+                                        ,name: name
+                                        ,novalidate: novalidate
+                                        ,pattern: pattern
+                                        ,readonly: readonly
+                                        ,required: required
+                                        ,size: size
+                                        ,$for: $for
+                                        ,form: form
+                                        ,max: max
+                                        ,min: min
+                                        ,step: step
+                                        ,cols: cols
+                                        ,rows: rows
+                                        ,wrap: wrap
+                                        ,href: href
+                                        ,target: target
+                                        ,download: download
+                                        ,downloadAs: downloadAs
+                                        ,hreflang: hreflang
+                                        ,media: media
+                                        ,ping: ping
+                                        ,rel: rel
+                                        ,ismap: ismap
+                                        ,usemap: usemap
+                                        ,shape: shape
+                                        ,coords: coords
+                                        ,src: src
+                                        ,height: height
+                                        ,width: width
+                                        ,alt: alt
+                                        ,autoplay: autoplay
+                                        ,controls: controls
+                                        ,loop: loop
+                                        ,preload: preload
+                                        ,poster: poster
+                                        ,$default: $default
+                                        ,kind: kind
+                                        ,srclang: srclang
+                                        ,sandbox: sandbox
+                                        ,seamless: seamless
+                                        ,srcdoc: srcdoc
+                                        ,reversed: reversed
+                                        ,start: start
+                                        ,align: align
+                                        ,colspan: colspan
+                                        ,rowspan: rowspan
+                                        ,headers: headers
+                                        ,scope: scope
+                                        ,async: async
+                                        ,charset: charset
+                                        ,content: content
+                                        ,defer: defer
+                                        ,httpEquiv: httpEquiv
+                                        ,language: language
+                                        ,scoped: scoped
+                                        ,accesskey: accesskey
+                                        ,contenteditable: contenteditable
+                                        ,contextmenu: contextmenu
+                                        ,dir: dir
+                                        ,draggable: draggable
+                                        ,dropzone: dropzone
+                                        ,itemprop: itemprop
+                                        ,lang: lang
+                                        ,spellcheck: spellcheck
+                                        ,tabindex: tabindex
+                                        ,challenge: challenge
+                                        ,keytype: keytype
+                                        ,cite: cite
+                                        ,datetime: datetime
+                                        ,pubdate: pubdate
+                                        ,manifest: manifest
+                                        ,property: property
+                                        ,attribute: attribute};
+};
+Elm.Html = Elm.Html || {};
+Elm.Html.Events = Elm.Html.Events || {};
+Elm.Html.Events.make = function (_elm) {
+   "use strict";
+   _elm.Html = _elm.Html || {};
+   _elm.Html.Events = _elm.Html.Events || {};
+   if (_elm.Html.Events.values) return _elm.Html.Events.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Json$Decode = Elm.Json.Decode.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $VirtualDom = Elm.VirtualDom.make(_elm);
+   var _op = {};
+   var keyCode = A2($Json$Decode._op[":="],
+   "keyCode",
+   $Json$Decode.$int);
+   var targetChecked = A2($Json$Decode.at,
+   _U.list(["target","checked"]),
+   $Json$Decode.bool);
+   var targetValue = A2($Json$Decode.at,
+   _U.list(["target","value"]),
+   $Json$Decode.string);
+   var defaultOptions = $VirtualDom.defaultOptions;
+   var Options = F2(function (a,b) {
+      return {stopPropagation: a,preventDefault: b};
+   });
+   var onWithOptions = $VirtualDom.onWithOptions;
+   var on = $VirtualDom.on;
+   var messageOn = F3(function (name,addr,msg) {
+      return A3(on,
+      name,
+      $Json$Decode.value,
+      function (_p0) {
+         return A2($Signal.message,addr,msg);
+      });
+   });
+   var onClick = messageOn("click");
+   var onDoubleClick = messageOn("dblclick");
+   var onMouseMove = messageOn("mousemove");
+   var onMouseDown = messageOn("mousedown");
+   var onMouseUp = messageOn("mouseup");
+   var onMouseEnter = messageOn("mouseenter");
+   var onMouseLeave = messageOn("mouseleave");
+   var onMouseOver = messageOn("mouseover");
+   var onMouseOut = messageOn("mouseout");
+   var onBlur = messageOn("blur");
+   var onFocus = messageOn("focus");
+   var onSubmit = messageOn("submit");
+   var onKey = F3(function (name,addr,handler) {
+      return A3(on,
+      name,
+      keyCode,
+      function (code) {
+         return A2($Signal.message,addr,handler(code));
+      });
+   });
+   var onKeyUp = onKey("keyup");
+   var onKeyDown = onKey("keydown");
+   var onKeyPress = onKey("keypress");
+   return _elm.Html.Events.values = {_op: _op
+                                    ,onBlur: onBlur
+                                    ,onFocus: onFocus
+                                    ,onSubmit: onSubmit
+                                    ,onKeyUp: onKeyUp
+                                    ,onKeyDown: onKeyDown
+                                    ,onKeyPress: onKeyPress
+                                    ,onClick: onClick
+                                    ,onDoubleClick: onDoubleClick
+                                    ,onMouseMove: onMouseMove
+                                    ,onMouseDown: onMouseDown
+                                    ,onMouseUp: onMouseUp
+                                    ,onMouseEnter: onMouseEnter
+                                    ,onMouseLeave: onMouseLeave
+                                    ,onMouseOver: onMouseOver
+                                    ,onMouseOut: onMouseOut
+                                    ,on: on
+                                    ,onWithOptions: onWithOptions
+                                    ,defaultOptions: defaultOptions
+                                    ,targetValue: targetValue
+                                    ,targetChecked: targetChecked
+                                    ,keyCode: keyCode
+                                    ,Options: Options};
+};
+Elm.Editor = Elm.Editor || {};
+Elm.Editor.Ui = Elm.Editor.Ui || {};
+Elm.Editor.Ui.Slider = Elm.Editor.Ui.Slider || {};
+Elm.Editor.Ui.Slider.make = function (_elm) {
+   "use strict";
+   _elm.Editor = _elm.Editor || {};
+   _elm.Editor.Ui = _elm.Editor.Ui || {};
+   _elm.Editor.Ui.Slider = _elm.Editor.Ui.Slider || {};
+   if (_elm.Editor.Ui.Slider.values)
+   return _elm.Editor.Ui.Slider.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Editor$Action = Elm.Editor.Action.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Html$Attributes = Elm.Html.Attributes.make(_elm),
+   $Html$Events = Elm.Html.Events.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var _op = {};
+   var slider = function (_p0) {
+      var _p1 = _p0;
+      var _p2 = _p1.value;
+      return A2($Html.div,
+      _U.list([]),
+      _U.list([A2($Html.label,
+              _U.list([]),
+              _U.list([$Html.text(_p1.name)]))
+              ,A2($Html.input,
+              _U.list([A3($Html$Events.on,
+                      "input",
+                      $Html$Events.targetValue,
+                      function (str) {
+                         return A2($Signal.message,_p1.address,_p1.createAction(str));
+                      })
+                      ,$Html$Attributes.type$("range")
+                      ,$Html$Attributes.value(_p2)
+                      ,$Html$Attributes.max(_p1.max)
+                      ,$Html$Attributes.min(_p1.min)]),
+              _U.list([]))
+              ,A2($Html.span,_U.list([]),_U.list([$Html.text(_p2)]))]));
+   };
+   var SliderSettings = F6(function (a,b,c,d,e,f) {
+      return {name: a
+             ,min: b
+             ,max: c
+             ,value: d
+             ,address: e
+             ,createAction: f};
+   });
+   return _elm.Editor.Ui.Slider.values = {_op: _op
+                                         ,SliderSettings: SliderSettings
+                                         ,slider: slider};
+};
+Elm.Editor = Elm.Editor || {};
 Elm.Editor.Ui = Elm.Editor.Ui || {};
 Elm.Editor.Ui.Header = Elm.Editor.Ui.Header || {};
 Elm.Editor.Ui.Header.make = function (_elm) {
@@ -16570,93 +17166,6 @@ Elm.Editor.Ui.GroupSelect.make = function (_elm) {
                                               ,groupTypes: groupTypes
                                               ,createOption: createOption
                                               ,groupSelect: groupSelect};
-};
-Elm.Editor = Elm.Editor || {};
-Elm.Editor.Util = Elm.Editor.Util || {};
-Elm.Editor.Util.Svg = Elm.Editor.Util.Svg || {};
-Elm.Editor.Util.Svg.make = function (_elm) {
-   "use strict";
-   _elm.Editor = _elm.Editor || {};
-   _elm.Editor.Util = _elm.Editor.Util || {};
-   _elm.Editor.Util.Svg = _elm.Editor.Util.Svg || {};
-   if (_elm.Editor.Util.Svg.values)
-   return _elm.Editor.Util.Svg.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Basics = Elm.Basics.make(_elm),
-   $Debug = Elm.Debug.make(_elm),
-   $Editor$Types = Elm.Editor.Types.make(_elm),
-   $List = Elm.List.make(_elm),
-   $Maybe = Elm.Maybe.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm),
-   $String = Elm.String.make(_elm),
-   $Svg = Elm.Svg.make(_elm),
-   $Svg$Attributes = Elm.Svg.Attributes.make(_elm),
-   $WallpaperGroup$Group = Elm.WallpaperGroup.Group.make(_elm),
-   $WallpaperGroup$Pattern = Elm.WallpaperGroup.Pattern.make(_elm);
-   var _op = {};
-   var pointToString = function (p) {
-      return A2($Basics._op["++"],
-      $Basics.toString(p.x),
-      A2($Basics._op["++"]," ",$Basics.toString(p.y)));
-   };
-   var renderPath = function (multiLine) {
-      var path = A2($Basics._op["++"],
-      "M ",
-      A2($Basics._op["++"],
-      A2($String.join," L ",A2($List.map,pointToString,multiLine)),
-      "z"));
-      return A2($Svg.path,
-      _U.list([$Svg$Attributes.d(path)
-              ,$Svg$Attributes.$class("tile")]),
-      _U.list([]));
-   };
-   var renderPaths = F4(function (group,columns,rows,tile) {
-      return A2($Svg.g,
-      _U.list([]),
-      $List.concat(A2($List.map,
-      function (t) {
-         return A2($List.map,renderPath,t);
-      },
-      A4($WallpaperGroup$Pattern.pattern,group,columns,rows,tile))));
-   });
-   var lineToAttribute = F2(function (_p0,attributes) {
-      var _p1 = _p0;
-      var _p3 = _p1.y;
-      var _p2 = _p1.x;
-      return _U.eq($List.length(attributes),0) ? A2($List.append,
-      _U.list([$Svg$Attributes.x1($Basics.toString(_p2))
-              ,$Svg$Attributes.y1($Basics.toString(_p3))]),
-      attributes) : A2($List.append,
-      _U.list([$Svg$Attributes.x2($Basics.toString(_p2))
-              ,$Svg$Attributes.y2($Basics.toString(_p3))]),
-      attributes);
-   });
-   var renderLine = function (line) {
-      return A2($Svg.line,
-      A3($List.foldl,lineToAttribute,_U.list([]),line),
-      _U.list([]));
-   };
-   var renderTile = function (tile) {
-      return A2($Svg.g,
-      _U.list([$Svg$Attributes.stroke("grey")]),
-      A2($List.map,renderLine,tile));
-   };
-   var renderTiles = F4(function (group,columns,rows,tile) {
-      return A2($Svg.g,
-      _U.list([]),
-      A2($List.map,
-      renderTile,
-      A4($WallpaperGroup$Pattern.pattern,group,columns,rows,tile)));
-   });
-   return _elm.Editor.Util.Svg.values = {_op: _op
-                                        ,lineToAttribute: lineToAttribute
-                                        ,pointToString: pointToString
-                                        ,renderPath: renderPath
-                                        ,renderPaths: renderPaths
-                                        ,renderLine: renderLine
-                                        ,renderTile: renderTile
-                                        ,renderTiles: renderTiles};
 };
 Elm.Editor = Elm.Editor || {};
 Elm.Editor.Ui = Elm.Editor.Ui || {};
@@ -17023,124 +17532,6 @@ Elm.Editor.Util.Convert.make = function (_elm) {
                                             ,toFloat: toFloat};
 };
 Elm.Editor = Elm.Editor || {};
-Elm.Editor.Ui = Elm.Editor.Ui || {};
-Elm.Editor.Ui.PatternStage = Elm.Editor.Ui.PatternStage || {};
-Elm.Editor.Ui.PatternStage.make = function (_elm) {
-   "use strict";
-   _elm.Editor = _elm.Editor || {};
-   _elm.Editor.Ui = _elm.Editor.Ui || {};
-   _elm.Editor.Ui.PatternStage = _elm.Editor.Ui.PatternStage || {};
-   if (_elm.Editor.Ui.PatternStage.values)
-   return _elm.Editor.Ui.PatternStage.values;
-   var _U = Elm.Native.Utils.make(_elm),
-   $Basics = Elm.Basics.make(_elm),
-   $Debug = Elm.Debug.make(_elm),
-   $Editor$Types = Elm.Editor.Types.make(_elm),
-   $Editor$Util$Svg = Elm.Editor.Util.Svg.make(_elm),
-   $Html = Elm.Html.make(_elm),
-   $List = Elm.List.make(_elm),
-   $Maybe = Elm.Maybe.make(_elm),
-   $Result = Elm.Result.make(_elm),
-   $Signal = Elm.Signal.make(_elm),
-   $String = Elm.String.make(_elm),
-   $Svg = Elm.Svg.make(_elm),
-   $Svg$Attributes = Elm.Svg.Attributes.make(_elm);
-   var _op = {};
-   var renderPath = function (_p0) {
-      var _p1 = _p0;
-      var _p5 = _p1.p1;
-      var _p4 = _p1.color;
-      var _p3 = _p1.c2;
-      var _p2 = _p1.c1;
-      var path = A2($String.join,
-      " ",
-      _U.list(["M"
-              ,$Editor$Util$Svg.pointToString(_p5)
-              ,"C"
-              ,$Editor$Util$Svg.pointToString(_p3)
-              ,$Editor$Util$Svg.pointToString(_p2)
-              ,$Editor$Util$Svg.pointToString(_p1.p2)
-              ,"C"
-              ,$Editor$Util$Svg.pointToString(_p2)
-              ,$Editor$Util$Svg.pointToString(_p3)
-              ,$Editor$Util$Svg.pointToString(_p5)
-              ,"Z"]));
-      return A2($Svg.path,
-      _U.list([$Svg$Attributes.d(path)
-              ,$Svg$Attributes.strokeWidth($Basics.toString(_p1.strokeWidth))
-              ,$Svg$Attributes.stroke(_p4)
-              ,$Svg$Attributes.opacity("1")
-              ,$Svg$Attributes.fill(_p4)
-              ,$Svg$Attributes.$class("tile")]),
-      _U.list([]));
-   };
-   var renderTile = function (tile) {
-      return A2($Svg.g,_U.list([]),A2($List.map,renderPath,tile));
-   };
-   var renderColorizedNoisyTiles = function (tiles) {
-      return A2($Svg.g,
-      _U.list([$Svg$Attributes.id("stage")]),
-      A2($List.map,renderTile,tiles));
-   };
-   var stage = function (model) {
-      return A2($Html.div,
-      _U.list([]),
-      _U.list([A2($Svg.svg,
-              _U.list([$Svg$Attributes.version("1.1")
-                      ,$Svg$Attributes.x("0")
-                      ,$Svg$Attributes.y("0")]),
-              _U.list([renderColorizedNoisyTiles(model)]))
-              ,A2($Svg.svg,
-              _U.list([$Svg$Attributes.id("filter-container")]),
-              _U.list([A2($Svg.defs,
-              _U.list([]),
-              _U.list([A2($Svg.filter,
-              _U.list([$Svg$Attributes.id("filter")]),
-              _U.list([A2($Svg.feImage,
-                      _U.list([$Svg$Attributes.xlinkHref("#stage")
-                              ,$Svg$Attributes.x("0")
-                              ,$Svg$Attributes.y("-100")
-                              ,$Svg$Attributes.result("IMAGEFILL")]),
-                      _U.list([]))
-                      ,A2($Svg.feTile,
-                      _U.list([$Svg$Attributes.in$("IMAGEFILL")
-                              ,$Svg$Attributes.result("TILEPATTERN")]),
-                      _U.list([]))
-                      ,A2($Svg.feFlood,
-                      _U.list([$Svg$Attributes.floodColor("#ffffff")
-                              ,$Svg$Attributes.result("BG-COLOR")]),
-                      _U.list([]))
-                      ,A2($Svg.feMerge,
-                      _U.list([$Svg$Attributes.result("BG-PATTERN")]),
-                      _U.list([A2($Svg.feMergeNode,
-                              _U.list([$Svg$Attributes.in$("BG-COLOR")]),
-                              _U.list([]))
-                              ,A2($Svg.feMergeNode,
-                              _U.list([$Svg$Attributes.in$("TILEPATTERN")]),
-                              _U.list([]))]))
-                      ,A2($Svg.feComposite,
-                      _U.list([$Svg$Attributes.operator("in")
-                              ,$Svg$Attributes.in$("BG-PATTERN")
-                              ,$Svg$Attributes.in2("SourceAlpha")]),
-                      _U.list([]))]))]))]))]));
-   };
-   var renderLine = function (_p6) {
-      var _p7 = _p6;
-      return A2($Svg.line,
-      A3($List.foldl,
-      $Editor$Util$Svg.lineToAttribute,
-      _U.list([]),
-      _p7._1),
-      _U.list([]));
-   };
-   return _elm.Editor.Ui.PatternStage.values = {_op: _op
-                                               ,renderLine: renderLine
-                                               ,renderPath: renderPath
-                                               ,renderTile: renderTile
-                                               ,renderColorizedNoisyTiles: renderColorizedNoisyTiles
-                                               ,stage: stage};
-};
-Elm.Editor = Elm.Editor || {};
 Elm.Editor.View = Elm.Editor.View || {};
 Elm.Editor.View.make = function (_elm) {
    "use strict";
@@ -17279,7 +17670,7 @@ Elm.Editor.View.make = function (_elm) {
                               _U.list([$Html.text("Undo")]))
                               ,A2($Html.button,
                               _U.list([A3($Html$Events.on,
-                                      "click",
+                                      "mousedown",
                                       $Html$Events.targetValue,
                                       function (_p3) {
                                          return A2($Signal.message,address,$Editor$Action.Redo);
@@ -17295,7 +17686,21 @@ Elm.Editor.View.make = function (_elm) {
                                  address,
                                  $Editor$Action.ToggleHelp(true));
                               })]),
-                              _U.list([$Html.text("?")]))]))]))
+                              _U.list([$Html.text("?")]))
+                              ,A2($Html.a,
+                              _U.list([$Html$Attributes.id("download")
+                                      ,$Html$Attributes.target("_blank")
+                                      ,$Html$Attributes.downloadAs("pattern.svg")]),
+                              _U.list([A2($Html.button,
+                              _U.list([A3($Html$Events.on,
+                              "mousedown",
+                              $Html$Events.targetValue,
+                              function (_p5) {
+                                 return A2($Signal.message,
+                                 address,
+                                 $Editor$Action.SetDownloadURI);
+                              })]),
+                              _U.list([$Html.text("↓")]))]))]))]))
               ,A2($Html.div,
               _U.list([$Html$Attributes.$class("main")]),
               _U.list([$Editor$Ui$PatternStage.stage(model.patternState.pattern)]))]),
@@ -17342,6 +17747,11 @@ Elm.Editor.App.make = function (_elm) {
       _p0));
    },
    responseColors);
+   var svgString = Elm.Native.Port.make(_elm).outboundSignal("svgString",
+   function (v) {
+      return v;
+   },
+   $Editor$Signals.setSvgString.signal);
    var request = Elm.Native.Port.make(_elm).outboundSignal("request",
    function (v) {
       return v;
